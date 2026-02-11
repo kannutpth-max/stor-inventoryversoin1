@@ -11,10 +11,14 @@ interface ServiceAccountCredentials {
   token_uri: string;
 }
 
+function toBase64Url(str: string): string {
+  return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
 async function getAccessToken(credentials: ServiceAccountCredentials): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
-  const header = btoa(JSON.stringify({ alg: "RS256", typ: "JWT" }));
-  const claim = btoa(JSON.stringify({
+  const header = toBase64Url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
+  const claim = toBase64Url(JSON.stringify({
     iss: credentials.client_email,
     scope: "https://www.googleapis.com/auth/spreadsheets",
     aud: credentials.token_uri,
@@ -28,7 +32,7 @@ async function getAccessToken(credentials: ServiceAccountCredentials): Promise<s
   const pemContent = credentials.private_key
     .replace(/-----BEGIN PRIVATE KEY-----/, "")
     .replace(/-----END PRIVATE KEY-----/, "")
-    .replace(/\n/g, "");
+    .replace(/\s/g, "");
   const binaryKey = Uint8Array.from(atob(pemContent), (c) => c.charCodeAt(0));
 
   const cryptoKey = await crypto.subtle.importKey(
@@ -45,10 +49,7 @@ async function getAccessToken(credentials: ServiceAccountCredentials): Promise<s
     new TextEncoder().encode(signInput)
   );
 
-  const sig = btoa(String.fromCharCode(...new Uint8Array(signature)))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
+  const sig = toBase64Url(String.fromCharCode(...new Uint8Array(signature)));
 
   const jwt = `${signInput}.${sig}`;
 
@@ -179,18 +180,56 @@ serve(async (req) => {
     try {
       credentials = JSON.parse(credentialsJson);
     } catch {
-      throw new Error(
-        "GOOGLE_SERVICE_ACCOUNT_CREDENTIALS is not valid JSON. " +
-        "Please paste the ENTIRE content of the downloaded .json key file " +
-        '(it should start with {"type":"service_account",...}). ' +
-        `Current value starts with: "${credentialsJson.substring(0, 20)}..."`
-      );
+      // JSON.parse failed - try to extract fields manually
+      // This handles cases where newlines in private_key break JSON parsing
+      console.log("Direct JSON.parse failed, attempting manual field extraction...");
+      
+      const extractField = (text: string, field: string): string => {
+        // Match "field": "value" where value may contain escaped chars (single-line)
+        const regex = new RegExp(`"${field}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`);
+        const match = text.match(regex);
+        if (match) return match[1].replace(/\\n/g, '\n').replace(/\\\\/g, '\\');
+        return '';
+      };
+      
+      // For private_key, use PEM delimiters to extract across newlines
+      const extractPrivateKey = (text: string): string => {
+        // First try the normal regex (works if no real newlines in value)
+        const normal = extractField(text, 'private_key');
+        if (normal) return normal;
+        
+        // Fallback: find PEM block with real newlines
+        const pemMatch = text.match(/-----BEGIN PRIVATE KEY-----([\s\S]*?)-----END PRIVATE KEY-----/);
+        if (pemMatch) {
+          // Strip all whitespace from base64 content, then re-chunk into 64-char lines
+          const base64 = pemMatch[1].replace(/\s/g, '');
+          const lines = base64.match(/.{1,64}/g) || [];
+          return `-----BEGIN PRIVATE KEY-----\n${lines.join('\n')}\n-----END PRIVATE KEY-----\n`;
+        }
+        return '';
+      };
+      
+      const client_email = extractField(credentialsJson, 'client_email');
+      const private_key = extractPrivateKey(credentialsJson);
+      const token_uri = extractField(credentialsJson, 'token_uri') || 'https://oauth2.googleapis.com/token';
+      
+      if (!client_email || !private_key) {
+        throw new Error(
+          `Failed to extract credentials. client_email found: ${!!client_email}, private_key found: ${!!private_key}. ` +
+          `First 50 chars: "${credentialsJson.substring(0, 50)}..."`
+        );
+      }
+      
+      console.log("Extracted client_email:", client_email);
+      console.log("Private key length:", private_key.length);
+      console.log("Private key starts with:", private_key.substring(0, 40));
+      console.log("Private key ends with:", private_key.substring(private_key.length - 40));
+      credentials = { client_email, private_key, token_uri };
     }
 
     if (!credentials.client_email || !credentials.private_key) {
       throw new Error(
-        "GOOGLE_SERVICE_ACCOUNT_CREDENTIALS is missing required fields (client_email, private_key). " +
-        "Make sure you pasted the full JSON content of the service account key file."
+        "GOOGLE_SERVICE_ACCOUNT_CREDENTIALS is missing required fields (client_email, private_key)."
       );
     }
     const accessToken = await getAccessToken(credentials);

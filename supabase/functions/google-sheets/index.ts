@@ -175,7 +175,24 @@ serve(async (req) => {
     const googleSheetId = Deno.env.get("GOOGLE_SHEET_ID");
     if (!googleSheetId) throw new Error("GOOGLE_SHEET_ID not configured");
 
-    const credentials: ServiceAccountCredentials = JSON.parse(credentialsJson);
+    let credentials: ServiceAccountCredentials;
+    try {
+      credentials = JSON.parse(credentialsJson);
+    } catch {
+      throw new Error(
+        "GOOGLE_SERVICE_ACCOUNT_CREDENTIALS is not valid JSON. " +
+        "Please paste the ENTIRE content of the downloaded .json key file " +
+        '(it should start with {"type":"service_account",...}). ' +
+        `Current value starts with: "${credentialsJson.substring(0, 20)}..."`
+      );
+    }
+
+    if (!credentials.client_email || !credentials.private_key) {
+      throw new Error(
+        "GOOGLE_SERVICE_ACCOUNT_CREDENTIALS is missing required fields (client_email, private_key). " +
+        "Make sure you pasted the full JSON content of the service account key file."
+      );
+    }
     const accessToken = await getAccessToken(credentials);
 
     const { action, sheet, data, id } = await req.json();

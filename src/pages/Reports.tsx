@@ -1,13 +1,10 @@
 import { useState } from "react";
 import { FileText, Download, Printer, FileSpreadsheet, Calendar } from "lucide-react";
+import ReportPreview from "@/components/reports/ReportPreview";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -16,6 +13,7 @@ import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useSheetData } from "@/hooks/useGoogleSheets";
 
 const reportTypes = [
   { id: "daily", name: "รายงานประจำวัน", description: "สรุปการเคลื่อนไหวสินค้าประจำวัน" },
@@ -30,19 +28,16 @@ const reportTypes = [
   { id: "low-stock", name: "สินค้าต่ำกว่าเกณฑ์", description: "รายการสินค้าที่ต่ำกว่าเกณฑ์ขั้นต่ำ" },
 ];
 
-const mockProducts = [
-  { id: "P001", name: "กระดาษ A4" },
-  { id: "P002", name: "ปากกาลูกลื่น" },
-  { id: "P003", name: "หมึกพิมพ์ HP" },
-  { id: "P004", name: "แฟ้มเอกสาร" },
-];
+interface ProductItem { id: string; name: string; }
 
 export default function Reports() {
+  const { data: sheetProducts = [] } = useSheetData<ProductItem>("products");
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
   const [dateFrom, setDateFrom] = useState<Date>();
   const [dateTo, setDateTo] = useState<Date>();
   const [productFrom, setProductFrom] = useState("");
   const [productTo, setProductTo] = useState("");
+  const [showPreview, setShowPreview] = useState(false);
   const { toast } = useToast();
 
   const handleExportExcel = () => {
@@ -66,7 +61,7 @@ export default function Reports() {
       toast({ variant: "destructive", title: "กรุณาเลือกรายงาน" });
       return;
     }
-    toast({ title: "กำลังแสดงตัวอย่างรายงาน...", description: "รายงานจะแสดงด้านล่าง" });
+    setShowPreview(true);
   };
 
   return (
@@ -87,7 +82,7 @@ export default function Reports() {
               {reportTypes.map((report) => (
                 <div
                   key={report.id}
-                  onClick={() => setSelectedReport(report.id)}
+                  onClick={() => { setSelectedReport(report.id); setShowPreview(false); }}
                   className={cn(
                     "cursor-pointer rounded-lg border p-4 transition-all hover:border-primary",
                     selectedReport === report.id
@@ -160,7 +155,7 @@ export default function Reports() {
                       <SelectValue placeholder="เลือกสินค้า" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockProducts.map((product) => (
+                      {sheetProducts.map((product) => (
                         <SelectItem key={product.id} value={product.id}>
                           {product.id} - {product.name}
                         </SelectItem>
@@ -175,7 +170,7 @@ export default function Reports() {
                       <SelectValue placeholder="เลือกสินค้า" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockProducts.map((product) => (
+                      {sheetProducts.map((product) => (
                         <SelectItem key={product.id} value={product.id}>
                           {product.id} - {product.name}
                         </SelectItem>
@@ -207,12 +202,29 @@ export default function Reports() {
 
           {/* Preview Area */}
           {selectedReport && (
-            <div className="rounded-lg border p-8 min-h-[300px] flex items-center justify-center bg-card">
-              <div className="text-center text-muted-foreground">
-                <FileText className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                <p className="text-lg font-medium">ตัวอย่างรายงาน</p>
-                <p>คลิก "แสดงตัวอย่าง" เพื่อดูรายงาน</p>
-              </div>
+            <div className="rounded-lg border min-h-[300px] bg-card">
+              {showPreview ? (
+                <div className="p-4">
+                  <h3 className="font-medium mb-4 text-lg">
+                    {reportTypes.find(r => r.id === selectedReport)?.name}
+                  </h3>
+                  <ReportPreview
+                    reportType={selectedReport}
+                    dateFrom={dateFrom}
+                    dateTo={dateTo}
+                    productFrom={productFrom}
+                    productTo={productTo}
+                  />
+                </div>
+              ) : (
+                <div className="p-8 flex items-center justify-center">
+                  <div className="text-center text-muted-foreground">
+                    <FileText className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium">ตัวอย่างรายงาน</p>
+                    <p>คลิก "แสดงตัวอย่าง" เพื่อดูรายงาน</p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </CardContent>

@@ -178,53 +178,18 @@ serve(async (req) => {
 
     let credentials: ServiceAccountCredentials;
     try {
-      credentials = JSON.parse(credentialsJson);
+      const parsed = JSON.parse(credentialsJson);
+      credentials = {
+        client_email: parsed.client_email,
+        private_key: parsed.private_key,
+        token_uri: parsed.token_uri || "https://oauth2.googleapis.com/token",
+      };
     } catch {
-      // JSON.parse failed - try to extract fields manually
-      // This handles cases where newlines in private_key break JSON parsing
-      console.log("Direct JSON.parse failed, attempting manual field extraction...");
-      
-      const extractField = (text: string, field: string): string => {
-        // Match "field": "value" where value may contain escaped chars (single-line)
-        const regex = new RegExp(`"${field}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`);
-        const match = text.match(regex);
-        if (match) return match[1].replace(/\\n/g, '\n').replace(/\\\\/g, '\\');
-        return '';
-      };
-      
-      // For private_key, use PEM delimiters to extract across newlines
-      const extractPrivateKey = (text: string): string => {
-        // First try the normal regex (works if no real newlines in value)
-        const normal = extractField(text, 'private_key');
-        if (normal) return normal;
-        
-        // Fallback: find PEM block with real newlines
-        const pemMatch = text.match(/-----BEGIN PRIVATE KEY-----([\s\S]*?)-----END PRIVATE KEY-----/);
-        if (pemMatch) {
-          // Strip all whitespace from base64 content, then re-chunk into 64-char lines
-          const base64 = pemMatch[1].replace(/\s/g, '');
-          const lines = base64.match(/.{1,64}/g) || [];
-          return `-----BEGIN PRIVATE KEY-----\n${lines.join('\n')}\n-----END PRIVATE KEY-----\n`;
-        }
-        return '';
-      };
-      
-      const client_email = extractField(credentialsJson, 'client_email');
-      const private_key = extractPrivateKey(credentialsJson);
-      const token_uri = extractField(credentialsJson, 'token_uri') || 'https://oauth2.googleapis.com/token';
-      
-      if (!client_email || !private_key) {
-        throw new Error(
-          `Failed to extract credentials. client_email found: ${!!client_email}, private_key found: ${!!private_key}. ` +
-          `First 50 chars: "${credentialsJson.substring(0, 50)}..."`
-        );
-      }
-      
-      console.log("Extracted client_email:", client_email);
-      console.log("Private key length:", private_key.length);
-      console.log("Private key starts with:", private_key.substring(0, 40));
-      console.log("Private key ends with:", private_key.substring(private_key.length - 40));
-      credentials = { client_email, private_key, token_uri };
+      throw new Error(
+        `GOOGLE_SERVICE_ACCOUNT_CREDENTIALS is not valid JSON. ` +
+        `Please paste the ENTIRE content of the downloaded .json key file. ` +
+        `Current value starts with: "${credentialsJson.substring(0, 30)}..."`
+      );
     }
 
     if (!credentials.client_email || !credentials.private_key) {
@@ -232,6 +197,16 @@ serve(async (req) => {
         "GOOGLE_SERVICE_ACCOUNT_CREDENTIALS is missing required fields (client_email, private_key)."
       );
     }
+    
+    // Normalize private key - ensure proper PEM format with \n
+    credentials.private_key = credentials.private_key
+      .replace(/\\n/g, '\n')  // Replace literal \n with actual newlines
+      .trim();
+    
+    console.log("client_email:", credentials.client_email);
+    console.log("private_key length:", credentials.private_key.length);
+    console.log("private_key starts:", credentials.private_key.substring(0, 40));
+    
     const accessToken = await getAccessToken(credentials);
 
     const { action, sheet, data, id } = await req.json();

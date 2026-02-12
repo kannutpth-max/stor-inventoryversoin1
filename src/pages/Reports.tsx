@@ -14,6 +14,7 @@ import { th } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useSheetData } from "@/hooks/useGoogleSheets";
+import { exportToExcel, exportToPDF, buildReportData } from "@/lib/exportReport";
 
 const reportTypes = [
   { id: "daily", name: "รายงานประจำวัน", description: "สรุปการเคลื่อนไหวสินค้าประจำวัน" },
@@ -29,9 +30,21 @@ const reportTypes = [
 ];
 
 interface ProductItem { id: string; name: string; }
+interface CategoryItem { id: string; name: string; }
+interface UnitItem { id: string; name: string; }
+interface CompanyItem { id: string; name: string; }
+interface DepartmentItem { id: string; name: string; }
+interface StockInItem { id: string; date: string; invoice_no: string; company_id: string; product_id: string; quantity: string; }
+interface StockOutItem { id: string; date: string; requisition_no: string; department_id: string; product_id: string; quantity: string; }
 
 export default function Reports() {
   const { data: sheetProducts = [] } = useSheetData<ProductItem>("products");
+  const { data: categories = [] } = useSheetData<CategoryItem>("categories");
+  const { data: unitsData = [] } = useSheetData<UnitItem>("units");
+  const { data: companies = [] } = useSheetData<CompanyItem>("companies");
+  const { data: departments = [] } = useSheetData<DepartmentItem>("departments");
+  const { data: stockIn = [] } = useSheetData<StockInItem>("stock_in");
+  const { data: stockOut = [] } = useSheetData<StockOutItem>("stock_out");
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
   const [dateFrom, setDateFrom] = useState<Date>();
   const [dateTo, setDateTo] = useState<Date>();
@@ -40,20 +53,52 @@ export default function Reports() {
   const [showPreview, setShowPreview] = useState(false);
   const { toast } = useToast();
 
-  const handleExportExcel = () => {
-    if (!selectedReport) {
-      toast({ variant: "destructive", title: "กรุณาเลือกรายงาน" });
-      return;
-    }
-    toast({ title: "กำลังส่งออกไฟล์ Excel...", description: "รายงานจะถูกดาวน์โหลดในไม่ช้า" });
+  const getProductName = (id: string) => sheetProducts.find(p => p.id === id)?.name || id;
+  const getProductUnit = (pid: string) => {
+    const product = sheetProducts.find(p => p.id === pid) as any;
+    return product ? (unitsData.find(u => u.id === product.unit_id)?.name || product.unit_id || "") : "";
+  };
+  const getCategoryName = (id: string) => categories.find(c => c.id === id)?.name || id;
+  const getCompanyName = (id: string) => companies.find(c => c.id === id)?.name || id;
+  const getDepartmentName = (id: string) => departments.find(d => d.id === id)?.name || id;
+
+  const getFilteredData = () => {
+    const filterDate = (dateStr: string) => {
+      if (!dateStr) return true;
+      try {
+        const d = new Date(dateStr);
+        if (dateFrom && d < dateFrom) return false;
+        if (dateTo && d > dateTo) return false;
+        return true;
+      } catch { return true; }
+    };
+    const filterProduct = (pid: string) => {
+      if (productFrom && pid < productFrom) return false;
+      if (productTo && pid > productTo) return false;
+      return true;
+    };
+    return {
+      products: (sheetProducts as any[]).filter(p => filterProduct(p.id)),
+      stockIn: (stockIn as any[]).filter(r => filterDate(r.date) && filterProduct(r.product_id)),
+      stockOut: (stockOut as any[]).filter(r => filterDate(r.date) && filterProduct(r.product_id)),
+    };
   };
 
-  const handleExportPDF = () => {
+  const handleExport = async (type: "excel" | "pdf") => {
     if (!selectedReport) {
       toast({ variant: "destructive", title: "กรุณาเลือกรายงาน" });
       return;
     }
-    toast({ title: "กำลังส่งออกไฟล์ PDF...", description: "รายงานจะถูกดาวน์โหลดในไม่ช้า" });
+    const filtered = getFilteredData();
+    const data = buildReportData(selectedReport, filtered.products, filtered.stockIn, filtered.stockOut, {
+      getProductName, getProductUnit, getCategoryName, getCompanyName, getDepartmentName,
+    });
+    try {
+      const saved = type === "excel" ? await exportToExcel(data) : await exportToPDF(data);
+      if (saved) toast({ title: `ส่งออก${type === "excel" ? " Excel" : " PDF"} สำเร็จ` });
+    } catch {
+      toast({ variant: "destructive", title: "เกิดข้อผิดพลาดในการส่งออก" });
+    }
   };
 
   const handlePreview = () => {
@@ -191,11 +236,11 @@ export default function Reports() {
                 <Printer className="mr-2 h-4 w-4" />
                 แสดงตัวอย่าง
               </Button>
-              <Button variant="outline" onClick={handleExportExcel}>
+              <Button variant="outline" onClick={() => handleExport("excel")}>
                 <FileSpreadsheet className="mr-2 h-4 w-4" />
                 ส่งออก Excel
               </Button>
-              <Button variant="outline" onClick={handleExportPDF}>
+              <Button variant="outline" onClick={() => handleExport("pdf")}>
                 <Download className="mr-2 h-4 w-4" />
                 ส่งออก PDF
               </Button>

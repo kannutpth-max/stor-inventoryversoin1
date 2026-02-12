@@ -150,11 +150,12 @@ export default function Reports() {
                 </div>
                 <div className="space-y-2">
                   <Label>สินค้าเริ่มต้น</Label>
-                  <Select value={productFrom} onValueChange={setProductFrom}>
+                  <Select value={productFrom} onValueChange={(v) => setProductFrom(v === "all" ? "" : v)}>
                     <SelectTrigger>
                       <SelectValue placeholder="เลือกสินค้า" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="all">-- ทั้งหมด --</SelectItem>
                       {sheetProducts.map((product) => (
                         <SelectItem key={product.id} value={product.id}>
                           {product.id} - {product.name}
@@ -165,11 +166,12 @@ export default function Reports() {
                 </div>
                 <div className="space-y-2">
                   <Label>สินค้าสิ้นสุด</Label>
-                  <Select value={productTo} onValueChange={setProductTo}>
+                  <Select value={productTo} onValueChange={(v) => setProductTo(v === "all" ? "" : v)}>
                     <SelectTrigger>
                       <SelectValue placeholder="เลือกสินค้า" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="all">-- ทั้งหมด --</SelectItem>
                       {sheetProducts.map((product) => (
                         <SelectItem key={product.id} value={product.id}>
                           {product.id} - {product.name}

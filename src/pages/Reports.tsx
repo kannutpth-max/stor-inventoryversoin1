@@ -50,6 +50,8 @@ export default function Reports() {
   const [dateTo, setDateTo] = useState<Date>();
   const [productFrom, setProductFrom] = useState("");
   const [productTo, setProductTo] = useState("");
+  const [selectedCompany, setSelectedCompany] = useState("");
+  const [selectedDepartment, setSelectedDepartment] = useState("");
   const [showPreview, setShowPreview] = useState(false);
   const { toast } = useToast();
 
@@ -77,10 +79,18 @@ export default function Reports() {
       if (productTo && pid > productTo) return false;
       return true;
     };
+    let filteredStockIn = (stockIn as any[]).filter(r => filterDate(r.date) && filterProduct(r.product_id));
+    let filteredStockOut = (stockOut as any[]).filter(r => filterDate(r.date) && filterProduct(r.product_id));
+    if (selectedCompany) {
+      filteredStockIn = filteredStockIn.filter(r => r.company_id === selectedCompany);
+    }
+    if (selectedDepartment) {
+      filteredStockOut = filteredStockOut.filter(r => r.department_id === selectedDepartment);
+    }
     return {
       products: (sheetProducts as any[]).filter(p => filterProduct(p.id)),
-      stockIn: (stockIn as any[]).filter(r => filterDate(r.date) && filterProduct(r.product_id)),
-      stockOut: (stockOut as any[]).filter(r => filterDate(r.date) && filterProduct(r.product_id)),
+      stockIn: filteredStockIn,
+      stockOut: filteredStockOut,
     };
   };
 
@@ -226,6 +236,43 @@ export default function Reports() {
                   </Select>
                 </div>
               </div>
+              {/* Company/Department filters */}
+              {selectedReport === "by-company" && (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <div className="space-y-2">
+                    <Label>เลือกบริษัท</Label>
+                    <Select value={selectedCompany || "all"} onValueChange={(v) => setSelectedCompany(v === "all" ? "" : v)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="เลือกบริษัท" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">-- ทั้งหมด --</SelectItem>
+                        {companies.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+              {selectedReport === "by-department" && (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <div className="space-y-2">
+                    <Label>เลือกหน่วยงาน</Label>
+                    <Select value={selectedDepartment || "all"} onValueChange={(v) => setSelectedDepartment(v === "all" ? "" : v)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="เลือกหน่วยงาน" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">-- ทั้งหมด --</SelectItem>
+                        {departments.map((d) => (
+                          <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -261,6 +308,8 @@ export default function Reports() {
                     dateTo={dateTo}
                     productFrom={productFrom}
                     productTo={productTo}
+                    selectedCompany={selectedCompany}
+                    selectedDepartment={selectedDepartment}
                   />
                 </div>
               ) : (

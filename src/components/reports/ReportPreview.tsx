@@ -21,9 +21,11 @@ interface ReportPreviewProps {
   dateTo?: Date;
   productFrom: string;
   productTo: string;
+  selectedCompany?: string;
+  selectedDepartment?: string;
 }
 
-export default function ReportPreview({ reportType, dateFrom, dateTo, productFrom, productTo }: ReportPreviewProps) {
+export default function ReportPreview({ reportType, dateFrom, dateTo, productFrom, productTo, selectedCompany, selectedDepartment }: ReportPreviewProps) {
   const { data: products = [], isLoading: loadingProducts } = useSheetData<Product>("products");
   const { data: categories = [] } = useSheetData<Category>("categories");
   const { data: units = [] } = useSheetData<Unit>("units");
@@ -64,8 +66,8 @@ export default function ReportPreview({ reportType, dateFrom, dateTo, productFro
     return true;
   };
 
-  const filteredStockIn = stockIn.filter(r => filterByDate(r.date) && filterByProduct(r.product_id));
-  const filteredStockOut = stockOut.filter(r => filterByDate(r.date) && filterByProduct(r.product_id));
+  const filteredStockIn = stockIn.filter(r => filterByDate(r.date) && filterByProduct(r.product_id) && (!selectedCompany || r.company_id === selectedCompany));
+  const filteredStockOut = stockOut.filter(r => filterByDate(r.date) && filterByProduct(r.product_id) && (!selectedDepartment || r.department_id === selectedDepartment));
   const filteredProducts = products.filter(p => filterByProduct(p.id));
 
   if (isLoading) {

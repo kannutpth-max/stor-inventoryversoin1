@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Search, Package, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Package, Loader2, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,7 +19,7 @@ import { useSheetData, useSheetCreate, useSheetUpdate, useSheetDelete } from "@/
 
 interface Product {
   id: string; name: string; category_id: string; unit_id: string;
-  price: string; min_stock: string; stock: string;
+  price: string; min_stock: string; stock: string; image: string;
 }
 interface Category { id: string; name: string; }
 interface Unit { id: string; name: string; }
@@ -35,7 +35,7 @@ export default function Products() {
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [formData, setFormData] = useState({ id: "", name: "", category_id: "", unit_id: "", price: "", min_stock: "", stock: "" });
+  const [formData, setFormData] = useState({ id: "", name: "", category_id: "", unit_id: "", price: "", min_stock: "", stock: "", image: "" });
   const { toast } = useToast();
 
   const getCategoryName = (id: string) => categories.find(c => c.id === id)?.name || id;
@@ -51,7 +51,7 @@ export default function Products() {
       setFormData({ ...product });
     } else {
       setEditingProduct(null);
-      setFormData({ id: `P${String(products.length + 1).padStart(3, "0")}`, name: "", category_id: "", unit_id: "", price: "", min_stock: "", stock: "0" });
+      setFormData({ id: `P${String(products.length + 1).padStart(3, "0")}`, name: "", category_id: "", unit_id: "", price: "", min_stock: "", stock: "0", image: "" });
     }
     setIsOpen(true);
   };
@@ -142,6 +142,17 @@ export default function Products() {
                   <Label className="text-right">เกณฑ์ขั้นต่ำ</Label>
                   <Input type="number" value={formData.min_stock} onChange={(e) => setFormData({ ...formData, min_stock: e.target.value })} className="col-span-3" />
                 </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label className="text-right">รูปภาพ (URL)</Label>
+                  <Input value={formData.image} onChange={(e) => setFormData({ ...formData, image: e.target.value })} className="col-span-3" placeholder="https://example.com/image.jpg" />
+                </div>
+                {formData.image && (
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <div className="col-start-2 col-span-3">
+                      <img src={formData.image} alt="Preview" className="h-20 w-20 object-cover rounded-md border" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    </div>
+                  </div>
+                )}
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsOpen(false)}>ยกเลิก</Button>
@@ -167,6 +178,7 @@ export default function Products() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-16">รูป</TableHead>
                     <TableHead>รหัส</TableHead>
                     <TableHead>ชื่อสินค้า</TableHead>
                     <TableHead>ประเภท</TableHead>
@@ -180,12 +192,21 @@ export default function Products() {
                 </TableHeader>
                 <TableBody>
                   {filteredProducts.length === 0 ? (
-                    <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">ไม่มีข้อมูล</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">ไม่มีข้อมูล</TableCell></TableRow>
                   ) : filteredProducts.map((product) => {
                     const stock = parseInt(product.stock) || 0;
                     const minStock = parseInt(product.min_stock) || 0;
                     return (
                       <TableRow key={product.id} className="table-row-hover">
+                        <TableCell>
+                          {product.image ? (
+                            <img src={product.image} alt={product.name} className="h-10 w-10 object-cover rounded-md border" onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }} />
+                          ) : (
+                            <div className="h-10 w-10 rounded-md border bg-muted flex items-center justify-center">
+                              <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                          )}
+                        </TableCell>
                         <TableCell className="font-medium">{product.id}</TableCell>
                         <TableCell>{product.name}</TableCell>
                         <TableCell>{getCategoryName(product.category_id)}</TableCell>

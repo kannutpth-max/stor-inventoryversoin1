@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Plus, Pencil, Trash2, Search, Package, Loader2, ImageIcon } from "lucide-react";
+import { useState, useRef } from "react";
+import { Plus, Pencil, Trash2, Search, Package, Loader2, ImageIcon, Upload, Link } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,11 +33,31 @@ export default function Products() {
   const updateMutation = useSheetUpdate("products");
   const deleteMutation = useSheetDelete("products");
 
+  const [imageMode, setImageMode] = useState<"url" | "upload">("url");
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState({ id: "", name: "", category_id: "", unit_id: "", price: "", min_stock: "", stock: "", image: "" });
   const { toast } = useToast();
+
+  const handleImageUpload = async (file: File) => {
+    setIsUploading(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${ext}`;
+      const { error } = await supabase.storage.from("product-images").upload(fileName, file);
+      if (error) throw error;
+      const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(fileName);
+      setFormData(prev => ({ ...prev, image: urlData.publicUrl }));
+      toast({ title: "อัปโหลดรูปภาพสำเร็จ" });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "อัปโหลดไม่สำเร็จ", description: e.message });
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const getCategoryName = (id: string) => categories.find(c => c.id === id)?.name || id;
   const getUnitName = (id: string) => units.find(u => u.id === id)?.name || id;
@@ -142,9 +163,28 @@ export default function Products() {
                   <Label className="text-right">เกณฑ์ขั้นต่ำ</Label>
                   <Input type="number" value={formData.min_stock} onChange={(e) => setFormData({ ...formData, min_stock: e.target.value })} className="col-span-3" />
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label className="text-right">รูปภาพ (URL)</Label>
-                  <Input value={formData.image} onChange={(e) => setFormData({ ...formData, image: e.target.value })} className="col-span-3" placeholder="https://example.com/image.jpg" />
+                <div className="grid grid-cols-4 items-start gap-4">
+                  <Label className="text-right pt-2">รูปภาพ</Label>
+                  <div className="col-span-3 space-y-2">
+                    <div className="flex gap-2">
+                      <Button type="button" size="sm" variant={imageMode === "url" ? "default" : "outline"} onClick={() => setImageMode("url")}>
+                        <Link className="mr-1 h-3 w-3" /> URL
+                      </Button>
+                      <Button type="button" size="sm" variant={imageMode === "upload" ? "default" : "outline"} onClick={() => setImageMode("upload")}>
+                        <Upload className="mr-1 h-3 w-3" /> อัปโหลด
+                      </Button>
+                    </div>
+                    {imageMode === "url" ? (
+                      <Input value={formData.image} onChange={(e) => setFormData({ ...formData, image: e.target.value })} placeholder="https://example.com/image.jpg" />
+                    ) : (
+                      <div>
+                        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); }} />
+                        <Button type="button" variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+                          {isUploading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />กำลังอัปโหลด...</> : <><Upload className="mr-2 h-4 w-4" />เลือกไฟล์รูปภาพ</>}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 {formData.image && (
                   <div className="grid grid-cols-4 items-center gap-4">

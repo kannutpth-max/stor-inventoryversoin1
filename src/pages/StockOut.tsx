@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { Plus, Trash2, PackageMinus, Calendar, FileText, Loader2 } from "lucide-react";
+import { Plus, Trash2, PackageMinus, Calendar, FileText, Loader2, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -36,12 +35,15 @@ export default function StockOut() {
   const [date, setDate] = useState<Date>(new Date());
   const [withdrawNo, setWithdrawNo] = useState("");
   const [departmentId, setDepartmentId] = useState("");
+  const [requester, setRequester] = useState("");
+  const [position, setPosition] = useState("");
   const [items, setItems] = useState<StockOutItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState("");
   const [quantity, setQuantity] = useState("");
   const { toast } = useToast();
 
   const getUnitName = (unitId: string) => units.find(u => u.id === unitId)?.name || unitId;
+  const getDepartmentName = (id: string) => departments.find(d => d.id === id)?.name || "";
 
   const handleAddItem = () => {
     if (!selectedProduct || !quantity) {
@@ -85,108 +87,244 @@ export default function StockOut() {
       }
       toast({ title: "บันทึกรายการเบิกสำเร็จ" });
       setWithdrawNo(""); setDepartmentId(""); setItems([]);
+      setRequester(""); setPosition("");
     } catch (e: any) {
       toast({ variant: "destructive", title: "เกิดข้อผิดพลาด", description: e.message });
     }
   };
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
+  // Generate empty rows to fill the form
+  const emptyRows = Math.max(0, 17 - items.length);
+
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <PackageMinus className="h-5 w-5" />
-            เบิกสินค้า
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
-              <Label>วันที่เบิก</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}>
-                    <Calendar className="mr-2 h-4 w-4" />
-                    {date ? format(date, "PPP", { locale: th }) : "เลือกวันที่"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <CalendarComponent mode="single" selected={date} onSelect={(d) => d && setDate(d)} initialFocus className="pointer-events-auto" />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div className="space-y-2">
-              <Label>เลขที่ใบเบิก</Label>
-              <div className="relative">
-                <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input value={withdrawNo} onChange={(e) => setWithdrawNo(e.target.value)} placeholder="WD-XXXX" className="pl-10" />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>หน่วยงานเบิก</Label>
-              <Select value={departmentId} onValueChange={setDepartmentId}>
-                <SelectTrigger><SelectValue placeholder="เลือกหน่วยงาน" /></SelectTrigger>
-                <SelectContent>
-                  {departments.map((d) => (<SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+    <div className="space-y-4">
+      {/* Action buttons - hidden when printing */}
+      <div className="flex items-center justify-between print:hidden">
+        <h2 className="text-lg font-semibold flex items-center gap-2">
+          <PackageMinus className="h-5 w-5" />
+          เบิกสินค้า
+        </h2>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handlePrint}>
+            <Printer className="mr-2 h-4 w-4" />
+            พิมพ์ใบเบิก
+          </Button>
+          <Button onClick={handleSave} disabled={createMutation.isPending}>
+            {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <PackageMinus className="mr-2 h-4 w-4" />
+            บันทึกรายการเบิก
+          </Button>
+        </div>
+      </div>
 
-          <div className="rounded-lg border p-4 bg-muted/30">
-            <h3 className="font-medium mb-4">เพิ่มรายการเบิก</h3>
-            <div className="grid gap-4 md:grid-cols-4">
-              <div className="md:col-span-2">
-                <Select value={selectedProduct} onValueChange={setSelectedProduct}>
-                  <SelectTrigger><SelectValue placeholder="เลือกสินค้า" /></SelectTrigger>
-                  <SelectContent>
-                    {products.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name} (คงเหลือ: {p.stock || 0})</SelectItem>))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="จำนวน" />
-              <Button onClick={handleAddItem} className="w-full"><Plus className="mr-2 h-4 w-4" />เพิ่ม</Button>
-            </div>
+      {/* Add item section - hidden when printing */}
+      <div className="rounded-lg border p-4 bg-muted/30 print:hidden">
+        <h3 className="font-medium mb-4">เพิ่มรายการเบิก</h3>
+        <div className="grid gap-4 md:grid-cols-4">
+          <div className="md:col-span-2">
+            <Select value={selectedProduct} onValueChange={setSelectedProduct}>
+              <SelectTrigger><SelectValue placeholder="เลือกสินค้า" /></SelectTrigger>
+              <SelectContent>
+                {products.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name} (คงเหลือ: {p.stock || 0})</SelectItem>))}
+              </SelectContent>
+            </Select>
           </div>
+          <Input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="จำนวน" />
+          <Button onClick={handleAddItem} className="w-full"><Plus className="mr-2 h-4 w-4" />เพิ่ม</Button>
+        </div>
+      </div>
 
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>รหัสสินค้า</TableHead><TableHead>ชื่อสินค้า</TableHead><TableHead>หน่วย</TableHead>
-                  <TableHead className="text-right">คงเหลือ</TableHead><TableHead className="text-right">จำนวนเบิก</TableHead>
-                  <TableHead className="text-center">ลบ</TableHead>
+      {/* Printable Form */}
+      <div className="border border-border rounded-lg p-6 bg-background print:border-black print:rounded-none print:p-4 print:text-black" id="requisition-form">
+        <style>{`
+          @media print {
+            body * { visibility: hidden; }
+            #requisition-form, #requisition-form * { visibility: visible; }
+            #requisition-form { position: absolute; left: 0; top: 0; width: 100%; font-size: 14px; }
+            .print\\:hidden { display: none !important; }
+          }
+        `}</style>
+
+        {/* Header */}
+        <div className="text-center space-y-1 mb-4">
+          <p className="text-sm text-muted-foreground print:text-black">เลขที่รับ...............</p>
+          <h1 className="text-lg font-bold">ใบเบิกวัสดุสำนักงาน / งานบ้านงานครัว</h1>
+          <p className="text-sm text-muted-foreground print:text-black">โรงพยาบาลจังหวัด................</p>
+        </div>
+
+        {/* Form Info */}
+        <div className="grid grid-cols-2 gap-x-8 gap-y-2 mb-2 text-sm">
+          <div className="flex items-center gap-2">
+            <Label className="whitespace-nowrap font-medium">วันที่:</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className={cn("flex-1 justify-start text-left font-normal h-8 print:border-0 print:border-b print:rounded-none print:border-black print:px-0", !date && "text-muted-foreground")}>
+                  <Calendar className="mr-2 h-3 w-3 print:hidden" />
+                  {date ? format(date, "d MMMM yyyy", { locale: th }) : "เลือกวันที่"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 print:hidden" align="start">
+                <CalendarComponent mode="single" selected={date} onSelect={(d) => d && setDate(d)} initialFocus className="pointer-events-auto" />
+              </PopoverContent>
+            </Popover>
+          </div>
+          <div className="flex items-center gap-2">
+            <Label className="whitespace-nowrap font-medium">เลขที่:</Label>
+            <Input value={withdrawNo} onChange={(e) => setWithdrawNo(e.target.value)} placeholder="WD-XXXX" className="h-8 text-sm print:border-0 print:border-b print:rounded-none print:border-black print:px-0" />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-x-8 gap-y-2 mb-2 text-sm">
+          <div className="flex items-center gap-2">
+            <Label className="whitespace-nowrap font-medium">เรียน:</Label>
+            <span className="text-muted-foreground print:text-black">ผู้อำนวยการโรงพยาบาลจังหวัด</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-x-8 gap-y-2 mb-2 text-sm">
+          <div className="flex items-center gap-2">
+            <Label className="whitespace-nowrap font-medium">ข้าพเจ้า:</Label>
+            <Input value={requester} onChange={(e) => setRequester(e.target.value)} placeholder="ชื่อผู้เบิก" className="h-8 text-sm print:border-0 print:border-b print:rounded-none print:border-black print:px-0" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Label className="whitespace-nowrap font-medium">ตำแหน่ง:</Label>
+            <Input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="ตำแหน่ง" className="h-8 text-sm print:border-0 print:border-b print:rounded-none print:border-black print:px-0" />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 mb-4 text-sm">
+          <Label className="whitespace-nowrap font-medium">หน่วยงานที่เบิก (ฝ่ายงาน):</Label>
+          <Select value={departmentId} onValueChange={setDepartmentId}>
+            <SelectTrigger className="h-8 text-sm flex-1 print:border-0 print:border-b print:rounded-none print:border-black">
+              <SelectValue placeholder="เลือกหน่วยงาน" />
+            </SelectTrigger>
+            <SelectContent>
+              {departments.map((d) => (<SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <p className="text-sm mb-2">มีความประสงค์ขอเบิกวัสดุที่ใช้ในราชการเพื่อจ่ายรายการดังต่อไปนี้</p>
+
+        {/* Table */}
+        <div className="border border-border print:border-black">
+          <Table>
+            <TableHeader>
+              <TableRow className="print:border-black">
+                <TableHead rowSpan={2} className="border border-border print:border-black text-center w-12 text-foreground">ลำดับ</TableHead>
+                <TableHead rowSpan={2} className="border border-border print:border-black text-center text-foreground">รายละเอียด</TableHead>
+                <TableHead rowSpan={2} className="border border-border print:border-black text-center w-20 text-foreground">หน่วย</TableHead>
+                <TableHead colSpan={2} className="border border-border print:border-black text-center text-foreground">คงเหลือ</TableHead>
+                <TableHead colSpan={2} className="border border-border print:border-black text-center text-foreground">จำนวน</TableHead>
+                <TableHead rowSpan={2} className="border border-border print:border-black text-center text-foreground print:hidden w-12">ลบ</TableHead>
+              </TableRow>
+              <TableRow className="print:border-black">
+                <TableHead className="border border-border print:border-black text-center w-20 text-foreground">ก่อนจ่าย</TableHead>
+                <TableHead className="border border-border print:border-black text-center w-20 text-foreground">หลังจ่าย</TableHead>
+                <TableHead className="border border-border print:border-black text-center w-16 text-foreground">เบิก</TableHead>
+                <TableHead className="border border-border print:border-black text-center w-16 text-foreground">จ่าย</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {items.map((item, index) => (
+                <TableRow key={item.id} className="print:border-black">
+                  <TableCell className="border border-border print:border-black text-center">{index + 1}</TableCell>
+                  <TableCell className="border border-border print:border-black">{item.productName}</TableCell>
+                  <TableCell className="border border-border print:border-black text-center">{item.unit}</TableCell>
+                  <TableCell className="border border-border print:border-black text-center">{item.stock.toLocaleString()}</TableCell>
+                  <TableCell className="border border-border print:border-black text-center">{(item.stock - item.quantity).toLocaleString()}</TableCell>
+                  <TableCell className="border border-border print:border-black text-center">{item.quantity.toLocaleString()}</TableCell>
+                  <TableCell className="border border-border print:border-black text-center"></TableCell>
+                  <TableCell className="border border-border print:border-black text-center print:hidden">
+                    <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(item.id)} className="h-7 w-7 text-destructive hover:text-destructive">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {items.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">ยังไม่มีรายการเบิก</TableCell></TableRow>
-                ) : items.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>{item.productId}</TableCell><TableCell>{item.productName}</TableCell><TableCell>{item.unit}</TableCell>
-                    <TableCell className="text-right">{item.stock.toLocaleString()}</TableCell>
-                    <TableCell className="text-right font-medium text-accent">-{item.quantity.toLocaleString()}</TableCell>
-                    <TableCell className="text-center">
-                      <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(item.id)} className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+              ))}
+              {/* Empty rows to fill the form */}
+              {Array.from({ length: emptyRows }).map((_, i) => (
+                <TableRow key={`empty-${i}`} className="print:border-black">
+                  <TableCell className="border border-border print:border-black text-center text-muted-foreground">{items.length + i + 1}</TableCell>
+                  <TableCell className="border border-border print:border-black">&nbsp;</TableCell>
+                  <TableCell className="border border-border print:border-black"></TableCell>
+                  <TableCell className="border border-border print:border-black"></TableCell>
+                  <TableCell className="border border-border print:border-black"></TableCell>
+                  <TableCell className="border border-border print:border-black"></TableCell>
+                  <TableCell className="border border-border print:border-black"></TableCell>
+                  <TableCell className="border border-border print:border-black print:hidden"></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* Signature Section */}
+        <div className="grid grid-cols-2 gap-8 mt-8 text-sm">
+          {/* Left - Requester */}
+          <div className="space-y-6">
+            <div>
+              <p className="font-medium">เรียน หัวหน้ากลุ่มงาน / หน่วยงาน</p>
+              <p className="text-muted-foreground print:text-black ml-4">- เห็นชอบให้เบิกวัสดุที่รับราชการ ใน</p>
+            </div>
+            <div className="space-y-4 mt-4">
+              <p>ทราบงาน.............................</p>
+              <div className="flex gap-4">
+                <p>ลงชื่อ.................................</p>
+              </div>
+              <p className="ml-8">(.........................................)</p>
+              <div className="flex items-center gap-4">
+                <span className="flex items-center gap-1">
+                  <span className="inline-block w-4 h-4 border border-border print:border-black"></span> เห็นชอบ
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="inline-block w-4 h-4 border border-border print:border-black"></span> ไม่เห็นชอบ
+                </span>
+              </div>
+            </div>
+            <div className="space-y-2 mt-4">
+              <p>(ลงชื่อ).............................. (ผู้เบิก)</p>
+              <p className="ml-8">(.........................................)</p>
+              <p>ตำแหน่ง/หน่วยงาน.............................</p>
+              <p>วันที่......../........../...........</p>
+            </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="text-lg font-semibold">รวมจำนวนเบิก: <span className="text-accent">{totalItems.toLocaleString()} รายการ</span></div>
-            <Button onClick={handleSave} size="lg" disabled={createMutation.isPending}>
-              {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              <PackageMinus className="mr-2 h-4 w-4" />
-              บันทึกรายการเบิก
-            </Button>
+          {/* Right - Approver */}
+          <div className="space-y-6">
+            <div>
+              <p className="font-medium">เรียน หัวหน้าหน่วยพัสดุ</p>
+              <p className="text-muted-foreground print:text-black ml-4">- เห็นชอบให้เบิกจ่ายวัสดุตามรายการดังกล่าว</p>
+            </div>
+            <div className="space-y-4 mt-4">
+              <p>(ลงชื่อ).............................. ผู้จ่ายของและตรวจนับ</p>
+              <p className="ml-8">( บางกรวย อังกฤษ )</p>
+              <p>ตำแหน่ง นักวิชาการพัสดุ</p>
+              <p>วันที่......../........../...........</p>
+            </div>
+            <div className="space-y-2 mt-4">
+              <ul className="list-disc ml-6 space-y-1">
+                <li>ระบุปี</li>
+                <li>รับจากรายการอีกครั้ง</li>
+              </ul>
+            </div>
+            <div className="space-y-2 mt-4">
+              <p>(ลงชื่อ).............................. ผู้ตรวจสอบ/อนุมัติ</p>
+              <p className="ml-8">(.........................................)</p>
+              <p>(ลงชื่อ).............................. หัวหน้าหน่วยพัสดุ</p>
+              <p className="ml-8">( บางกรวย อังกฤษ )</p>
+              <p>ตำแหน่ง เจ้าพนักงานพัสดุชำนาญงาน</p>
+              <p>วันที่......../........../...........</p>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

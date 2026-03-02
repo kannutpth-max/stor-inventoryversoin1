@@ -266,61 +266,70 @@ export default function StockOut() {
         </div>
 
         {/* Signature Section */}
-        <div className="grid grid-cols-2 gap-8 mt-8 text-sm">
-          {/* Left - Requester */}
-          <div className="space-y-6">
-            <div>
-              <p className="font-medium">เรียน หัวหน้ากลุ่มงาน / หน่วยงาน</p>
-              <p className="text-muted-foreground print:text-black ml-4">- เห็นชอบให้เบิกวัสดุที่รับราชการ ใน</p>
-            </div>
-            <div className="space-y-4 mt-4">
-              <p>ทราบงาน.............................</p>
-              <div className="flex gap-4">
-                <p>ลงชื่อ.................................</p>
-              </div>
-              <p className="ml-8">(.........................................)</p>
-              <div className="flex items-center gap-4">
-                <span className="flex items-center gap-1">
-                  <span className="inline-block w-4 h-4 border border-border print:border-black"></span> เห็นชอบ
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="inline-block w-4 h-4 border border-border print:border-black"></span> ไม่เห็นชอบ
-                </span>
+        <div className="mt-10 text-sm">
+          {/* Row 1: Requester & Department Head */}
+          <div className="grid grid-cols-2 gap-12">
+            <div className="text-center space-y-8">
+              <p className="font-medium text-left">ผู้เบิก</p>
+              <div className="space-y-1 pt-4">
+                <p>ลงชื่อ..............................................</p>
+                <p>(.............................................)</p>
+                <p>ตำแหน่ง........................................</p>
+                <p>วันที่......../............/............</p>
               </div>
             </div>
-            <div className="space-y-2 mt-4">
-              <p>(ลงชื่อ).............................. (ผู้เบิก)</p>
-              <p className="ml-8">(.........................................)</p>
-              <p>ตำแหน่ง/หน่วยงาน.............................</p>
-              <p>วันที่......../........../...........</p>
+            <div className="text-center space-y-8">
+              <p className="font-medium text-left">หัวหน้ากลุ่มงาน / หน่วยงาน</p>
+              <div className="space-y-1 pt-4">
+                <p>ลงชื่อ..............................................</p>
+                <p>(.............................................)</p>
+                <p>ตำแหน่ง........................................</p>
+                <p>วันที่......../............/............</p>
+              </div>
             </div>
           </div>
 
-          {/* Right - Approver */}
-          <div className="space-y-6">
-            <div>
-              <p className="font-medium">เรียน หัวหน้าหน่วยพัสดุ</p>
-              <p className="text-muted-foreground print:text-black ml-4">- เห็นชอบให้เบิกจ่ายวัสดุตามรายการดังกล่าว</p>
+          {/* Row 2: Issuer & Approver */}
+          <div className="grid grid-cols-2 gap-12 mt-10">
+            <div className="text-center space-y-8">
+              <p className="font-medium text-left">ผู้จ่ายของและตรวจนับ</p>
+              <div className="space-y-1 pt-4">
+                <p>ลงชื่อ..............................................</p>
+                <p>(.............................................)</p>
+                <p>ตำแหน่ง........................................</p>
+                <p>วันที่......../............/............</p>
+              </div>
             </div>
-            <div className="space-y-4 mt-4">
-              <p>(ลงชื่อ).............................. ผู้จ่ายของและตรวจนับ</p>
-              <p className="ml-8">( บางกรวย อังกฤษ )</p>
-              <p>ตำแหน่ง นักวิชาการพัสดุ</p>
-              <p>วันที่......../........../...........</p>
+            <div className="text-center space-y-8">
+              <p className="font-medium text-left">ผู้อนุมัติ</p>
+              <div className="space-y-1 pt-4">
+                <p>ลงชื่อ..............................................</p>
+                <p>(.............................................)</p>
+                <p>ตำแหน่ง........................................</p>
+                <p>วันที่......../............/............</p>
+              </div>
             </div>
-            <div className="space-y-2 mt-4">
-              <ul className="list-disc ml-6 space-y-1">
-                <li>ระบุปี</li>
-                <li>รับจากรายการอีกครั้ง</li>
-              </ul>
+          </div>
+
+          {/* Row 3: Receiver */}
+          <div className="grid grid-cols-2 gap-12 mt-10">
+            <div className="text-center space-y-8">
+              <p className="font-medium text-left">ผู้รับของ</p>
+              <div className="space-y-1 pt-4">
+                <p>ลงชื่อ..............................................</p>
+                <p>(.............................................)</p>
+                <p>ตำแหน่ง........................................</p>
+                <p>วันที่......../............/............</p>
+              </div>
             </div>
-            <div className="space-y-2 mt-4">
-              <p>(ลงชื่อ).............................. ผู้ตรวจสอบ/อนุมัติ</p>
-              <p className="ml-8">(.........................................)</p>
-              <p>(ลงชื่อ).............................. หัวหน้าหน่วยพัสดุ</p>
-              <p className="ml-8">( บางกรวย อังกฤษ )</p>
-              <p>ตำแหน่ง เจ้าพนักงานพัสดุชำนาญงาน</p>
-              <p>วันที่......../........../...........</p>
+            <div className="text-center space-y-8">
+              <p className="font-medium text-left">หัวหน้าหน่วยพัสดุ</p>
+              <div className="space-y-1 pt-4">
+                <p>ลงชื่อ..............................................</p>
+                <p>(.............................................)</p>
+                <p>ตำแหน่ง........................................</p>
+                <p>วันที่......../............/............</p>
+              </div>
             </div>
           </div>
         </div>

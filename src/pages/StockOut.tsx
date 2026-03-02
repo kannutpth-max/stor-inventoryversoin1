@@ -123,22 +123,6 @@ export default function StockOut() {
         </div>
       </div>
 
-      {/* Add item section - hidden when printing */}
-      <div className="rounded-lg border p-4 bg-muted/30 print:hidden">
-        <h3 className="font-medium mb-4">เพิ่มรายการเบิก</h3>
-        <div className="grid gap-4 md:grid-cols-4">
-          <div className="md:col-span-2">
-            <Select value={selectedProduct} onValueChange={setSelectedProduct}>
-              <SelectTrigger><SelectValue placeholder="เลือกสินค้า" /></SelectTrigger>
-              <SelectContent>
-                {products.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name} (คงเหลือ: {p.stock || 0})</SelectItem>))}
-              </SelectContent>
-            </Select>
-          </div>
-          <Input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="จำนวน" />
-          <Button onClick={handleAddItem} className="w-full"><Plus className="mr-2 h-4 w-4" />เพิ่ม</Button>
-        </div>
-      </div>
 
       {/* Printable Form */}
       <div className="border border-border rounded-lg p-6 bg-background print:border-black print:rounded-none print:p-4 print:text-black" id="requisition-form">
@@ -210,7 +194,27 @@ export default function StockOut() {
           </Select>
         </div>
 
-        <p className="text-sm mb-2">มีความประสงค์ขอเบิกวัสดุที่ใช้ในราชการเพื่อจ่ายรายการดังต่อไปนี้</p>
+        <p className="text-sm mb-3">มีความประสงค์ขอเบิกวัสดุที่ใช้ในราชการเพื่อจ่ายรายการดังต่อไปนี้</p>
+
+        {/* Add item section */}
+        <div className="rounded-lg border p-3 bg-muted/30 mb-3 print:hidden">
+          <div className="grid gap-3 md:grid-cols-4 items-end">
+            <div className="md:col-span-2">
+              <Label className="text-xs mb-1 block">เลือกสินค้า</Label>
+              <Select value={selectedProduct} onValueChange={setSelectedProduct}>
+                <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="เลือกสินค้า" /></SelectTrigger>
+                <SelectContent>
+                  {products.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name} (คงเหลือ: {p.stock || 0})</SelectItem>))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs mb-1 block">จำนวน</Label>
+              <Input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="จำนวน" className="h-8 text-sm" />
+            </div>
+            <Button onClick={handleAddItem} size="sm" className="h-8"><Plus className="mr-1 h-3 w-3" />เพิ่มรายการ</Button>
+          </div>
+        </div>
 
         {/* Table */}
         <div className="border border-border print:border-black">

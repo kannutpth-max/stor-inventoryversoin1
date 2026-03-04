@@ -3,9 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { User, Session } from "@supabase/supabase-js";
+import { AuthProvider, useAuth, UserRole } from "@/contexts/AuthContext";
 import { MainLayout } from "@/components/layout/MainLayout";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -25,59 +23,30 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// Protected Route wrapper
-function ProtectedRoute({ 
-  children, 
-  title, 
-  user, 
-  onLogout 
-}: { 
-  children: React.ReactNode; 
+// Route accessible by specific roles
+function ProtectedRoute({
+  children,
+  title,
+  allowedRoles = ["admin", "user"],
+}: {
+  children: React.ReactNode;
   title: string;
-  user: User | null;
-  onLogout: () => void;
+  allowedRoles?: UserRole[];
 }) {
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
-  
+  const { user, logout } = useAuth();
+
+  if (!user) return <Navigate to="/auth" replace />;
+  if (!allowedRoles.includes(user.role)) return <Navigate to="/dashboard" replace />;
+
   return (
-    <MainLayout title={title} userEmail={user.email} onLogout={onLogout}>
+    <MainLayout title={title} userEmail={user.username} onLogout={logout}>
       {children}
     </MainLayout>
   );
 }
 
-const App = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setIsLoading(false);
-      }
-    );
-
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setSession(null);
-  };
+function AppRoutes() {
+  const { user, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -91,130 +60,43 @@ const App = () => {
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route 
-              path="/auth" 
-              element={user ? <Navigate to="/dashboard" replace /> : <Auth />} 
-            />
-            <Route 
-              path="/" 
-              element={<Navigate to={user ? "/dashboard" : "/auth"} replace />} 
-            />
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute title="ภาพรวม" user={user} onLogout={handleLogout}>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/products"
-              element={
-                <ProtectedRoute title="ข้อมูลสินค้า" user={user} onLogout={handleLogout}>
-                  <Products />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/categories"
-              element={
-                <ProtectedRoute title="ประเภทสินค้า" user={user} onLogout={handleLogout}>
-                  <Categories />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/units"
-              element={
-                <ProtectedRoute title="หน่วยนับ" user={user} onLogout={handleLogout}>
-                  <Units />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/companies"
-              element={
-                <ProtectedRoute title="บริษัท/ผู้ขาย" user={user} onLogout={handleLogout}>
-                  <Companies />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/departments"
-              element={
-                <ProtectedRoute title="หน่วยงานเบิก" user={user} onLogout={handleLogout}>
-                  <Departments />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/stock-in"
-              element={
-                <ProtectedRoute title="รับเข้าสินค้า" user={user} onLogout={handleLogout}>
-                  <StockIn />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/stock-out"
-              element={
-                <ProtectedRoute title="เบิกสินค้า" user={user} onLogout={handleLogout}>
-                  <StockOut />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/stock-out-manage"
-              element={
-                <ProtectedRoute title="จัดการรายการเบิก" user={user} onLogout={handleLogout}>
-                  <StockOutManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/stock-in-manage"
-              element={
-                <ProtectedRoute title="จัดการรายการรับ" user={user} onLogout={handleLogout}>
-                  <StockInManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/reports"
-              element={
-                <ProtectedRoute title="รายงาน" user={user} onLogout={handleLogout}>
-                  <Reports />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/backup"
-              element={
-                <ProtectedRoute title="สำรองข้อมูล" user={user} onLogout={handleLogout}>
-                  <Backup />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                <ProtectedRoute title="ตั้งค่า" user={user} onLogout={handleLogout}>
-                  <Settings />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <Routes>
+      <Route path="/auth" element={user ? <Navigate to="/dashboard" replace /> : <Auth />} />
+      <Route path="/" element={<Navigate to={user ? "/dashboard" : "/auth"} replace />} />
+
+      {/* Accessible by all logged-in users */}
+      <Route path="/dashboard" element={<ProtectedRoute title="ภาพรวม"><Dashboard /></ProtectedRoute>} />
+      <Route path="/stock-out" element={<ProtectedRoute title="เบิกสินค้า"><StockOut /></ProtectedRoute>} />
+
+      {/* Admin only */}
+      <Route path="/products" element={<ProtectedRoute title="ข้อมูลสินค้า" allowedRoles={["admin"]}><Products /></ProtectedRoute>} />
+      <Route path="/categories" element={<ProtectedRoute title="ประเภทสินค้า" allowedRoles={["admin"]}><Categories /></ProtectedRoute>} />
+      <Route path="/units" element={<ProtectedRoute title="หน่วยนับ" allowedRoles={["admin"]}><Units /></ProtectedRoute>} />
+      <Route path="/companies" element={<ProtectedRoute title="บริษัท/ผู้ขาย" allowedRoles={["admin"]}><Companies /></ProtectedRoute>} />
+      <Route path="/departments" element={<ProtectedRoute title="หน่วยงานเบิก" allowedRoles={["admin"]}><Departments /></ProtectedRoute>} />
+      <Route path="/stock-in" element={<ProtectedRoute title="รับเข้าสินค้า" allowedRoles={["admin"]}><StockIn /></ProtectedRoute>} />
+      <Route path="/stock-out-manage" element={<ProtectedRoute title="จัดการรายการเบิก" allowedRoles={["admin"]}><StockOutManagement /></ProtectedRoute>} />
+      <Route path="/stock-in-manage" element={<ProtectedRoute title="จัดการรายการรับ" allowedRoles={["admin"]}><StockInManagement /></ProtectedRoute>} />
+      <Route path="/reports" element={<ProtectedRoute title="รายงาน" allowedRoles={["admin"]}><Reports /></ProtectedRoute>} />
+      <Route path="/backup" element={<ProtectedRoute title="สำรองข้อมูล" allowedRoles={["admin"]}><Backup /></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute title="ตั้งค่า" allowedRoles={["admin"]}><Settings /></ProtectedRoute>} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   );
-};
+}
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
 
 export default App;

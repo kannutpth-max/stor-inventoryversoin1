@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
   Package,
@@ -17,10 +17,10 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
-  Menu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useAuth, UserRole } from "@/contexts/AuthContext";
 
 interface SidebarProps {
   onLogout: () => void;
@@ -28,7 +28,20 @@ interface SidebarProps {
   onToggle: () => void;
 }
 
-const menuItems = [
+interface MenuItem {
+  name: string;
+  path: string;
+  icon: any;
+  roles?: UserRole[];
+}
+
+interface MenuSection {
+  title: string;
+  items: MenuItem[];
+  roles?: UserRole[];
+}
+
+const menuItems: MenuSection[] = [
   {
     title: "ภาพรวม",
     items: [
@@ -38,15 +51,16 @@ const menuItems = [
   {
     title: "การจัดการสินค้า",
     items: [
-      { name: "ข้อมูลสินค้า", path: "/products", icon: Package },
-      { name: "รับเข้าสินค้า", path: "/stock-in", icon: PackagePlus },
-      { name: "จัดการรายการรับ", path: "/stock-in-manage", icon: ClipboardList },
+      { name: "ข้อมูลสินค้า", path: "/products", icon: Package, roles: ["admin"] },
+      { name: "รับเข้าสินค้า", path: "/stock-in", icon: PackagePlus, roles: ["admin"] },
+      { name: "จัดการรายการรับ", path: "/stock-in-manage", icon: ClipboardList, roles: ["admin"] },
       { name: "เบิกสินค้า", path: "/stock-out", icon: PackageMinus },
-      { name: "จัดการรายการเบิก", path: "/stock-out-manage", icon: ClipboardCheck },
+      { name: "จัดการรายการเบิก", path: "/stock-out-manage", icon: ClipboardCheck, roles: ["admin"] },
     ],
   },
   {
     title: "ข้อมูลหลัก",
+    roles: ["admin"],
     items: [
       { name: "ประเภทสินค้า", path: "/categories", icon: Layers },
       { name: "หน่วยนับ", path: "/units", icon: Ruler },
@@ -56,12 +70,14 @@ const menuItems = [
   },
   {
     title: "รายงาน",
+    roles: ["admin"],
     items: [
       { name: "รายงาน", path: "/reports", icon: FileText },
     ],
   },
   {
     title: "ระบบ",
+    roles: ["admin"],
     items: [
       { name: "สำรองข้อมูล", path: "/backup", icon: Database },
       { name: "ตั้งค่า", path: "/settings", icon: Settings },
@@ -71,6 +87,16 @@ const menuItems = [
 
 export function Sidebar({ onLogout, collapsed, onToggle }: SidebarProps) {
   const location = useLocation();
+  const { user } = useAuth();
+  const role = user?.role ?? "user";
+
+  const filteredSections = menuItems
+    .filter((section) => !section.roles || section.roles.includes(role))
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => !item.roles || item.roles.includes(role)),
+    }))
+    .filter((section) => section.items.length > 0);
 
   return (
     <aside
@@ -85,12 +111,8 @@ export function Sidebar({ onLogout, collapsed, onToggle }: SidebarProps) {
           <div className="flex items-center gap-2">
             <Package className="h-8 w-8 text-sidebar-primary" />
             <div>
-              <h1 className="text-lg font-bold text-sidebar-foreground">
-                คลังสินค้า
-              </h1>
-              <p className="text-xs text-sidebar-foreground/60">
-                Inventory System
-              </p>
+              <h1 className="text-lg font-bold text-sidebar-foreground">คลังสินค้า</h1>
+              <p className="text-xs text-sidebar-foreground/60">Inventory System</p>
             </div>
           </div>
         )}
@@ -100,17 +122,13 @@ export function Sidebar({ onLogout, collapsed, onToggle }: SidebarProps) {
           onClick={onToggle}
           className="text-sidebar-foreground hover:bg-sidebar-accent"
         >
-          {collapsed ? (
-            <ChevronRight className="h-5 w-5" />
-          ) : (
-            <ChevronLeft className="h-5 w-5" />
-          )}
+          {collapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
         </Button>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4">
-        {menuItems.map((section, idx) => (
+        {filteredSections.map((section, idx) => (
           <div key={idx} className="mb-4">
             {!collapsed && (
               <p className="mb-2 px-4 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">

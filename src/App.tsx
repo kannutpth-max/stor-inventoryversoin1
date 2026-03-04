@@ -16,6 +16,8 @@ import Companies from "./pages/Companies";
 import Departments from "./pages/Departments";
 import StockIn from "./pages/StockIn";
 import StockOut from "./pages/StockOut";
+import StockInManagement from "./pages/StockInManagement";
+import StockOutManagement from "./pages/StockOutManagement";
 import Reports from "./pages/Reports";
 import Backup from "./pages/Backup";
 import Settings from "./pages/Settings";
@@ -164,6 +166,22 @@ const App = () => {
               element={
                 <ProtectedRoute title="เบิกสินค้า" user={user} onLogout={handleLogout}>
                   <StockOut />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/stock-out-manage"
+              element={
+                <ProtectedRoute title="จัดการรายการเบิก" user={user} onLogout={handleLogout}>
+                  <StockOutManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/stock-in-manage"
+              element={
+                <ProtectedRoute title="จัดการรายการรับ" user={user} onLogout={handleLogout}>
+                  <StockInManagement />
                 </ProtectedRoute>
               }
             />

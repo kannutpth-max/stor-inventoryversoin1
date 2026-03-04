@@ -5,6 +5,8 @@ import {
   Package,
   PackagePlus,
   PackageMinus,
+  ClipboardList,
+  ClipboardCheck,
   Building2,
   Layers,
   Ruler,
@@ -38,7 +40,9 @@ const menuItems = [
     items: [
       { name: "ข้อมูลสินค้า", path: "/products", icon: Package },
       { name: "รับเข้าสินค้า", path: "/stock-in", icon: PackagePlus },
+      { name: "จัดการรายการรับ", path: "/stock-in-manage", icon: ClipboardList },
       { name: "เบิกสินค้า", path: "/stock-out", icon: PackageMinus },
+      { name: "จัดการรายการเบิก", path: "/stock-out-manage", icon: ClipboardCheck },
     ],
   },
   {

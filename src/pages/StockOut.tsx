@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Plus, Trash2, PackageMinus, Calendar, FileText, Loader2, Printer } from "lucide-react";
+import SignaturePad from "@/components/SignaturePad";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -100,7 +101,7 @@ export default function StockOut() {
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
   // Generate empty rows to fill the form
-  const emptyRows = Math.max(0, 10 - items.length);
+  const emptyRows = Math.max(0, 17 - items.length);
 
   return (
     <div className="space-y-4">
@@ -125,14 +126,19 @@ export default function StockOut() {
 
 
       {/* Printable Form */}
-      <div className="border border-border rounded-lg p-6 bg-background print:border-none print:rounded-none print:p-2 print:text-black print:text-[12px]" id="requisition-form">
+      <div className="border border-border rounded-lg p-6 bg-background print:border-none print:rounded-none print:p-2 print:text-black print:text-[11px]" id="requisition-form">
         <style>{`
           @media print {
-            @page { size: A4; margin: 10mm; }
+            @page { size: A4; margin: 8mm; }
             body * { visibility: hidden; }
             #requisition-form, #requisition-form * { visibility: visible; }
-            #requisition-form { position: absolute; left: 0; top: 0; width: 100%; font-size: 12px; }
+            #requisition-form { position: absolute; left: 0; top: 0; width: 100%; font-size: 11px; }
             .print\\:hidden { display: none !important; }
+            #requisition-form table td, #requisition-form table th {
+              padding: 1px 4px !important;
+              font-size: 11px !important;
+              line-height: 1.2 !important;
+            }
           }
         `}</style>
 
@@ -238,32 +244,32 @@ export default function StockOut() {
             </TableHeader>
             <TableBody>
               {items.map((item, index) => (
-                <TableRow key={item.id} className="print:border-black">
-                  <TableCell className="border border-border print:border-black text-center">{index + 1}</TableCell>
-                  <TableCell className="border border-border print:border-black">{item.productName}</TableCell>
-                  <TableCell className="border border-border print:border-black text-center">{item.unit}</TableCell>
-                  <TableCell className="border border-border print:border-black text-center">{item.stock.toLocaleString()}</TableCell>
-                  <TableCell className="border border-border print:border-black text-center">{(item.stock - item.quantity).toLocaleString()}</TableCell>
-                  <TableCell className="border border-border print:border-black text-center">{item.quantity.toLocaleString()}</TableCell>
-                  <TableCell className="border border-border print:border-black text-center"></TableCell>
-                  <TableCell className="border border-border print:border-black text-center print:hidden">
-                    <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(item.id)} className="h-7 w-7 text-destructive hover:text-destructive">
-                      <Trash2 className="h-4 w-4" />
+                <TableRow key={item.id} className="print:border-black h-6">
+                  <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">{index + 1}</TableCell>
+                  <TableCell className="border border-border print:border-black py-0.5 text-xs">{item.productName}</TableCell>
+                  <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">{item.unit}</TableCell>
+                  <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">{item.stock.toLocaleString()}</TableCell>
+                  <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">{(item.stock - item.quantity).toLocaleString()}</TableCell>
+                  <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">{item.quantity.toLocaleString()}</TableCell>
+                  <TableCell className="border border-border print:border-black text-center py-0.5 text-xs"></TableCell>
+                  <TableCell className="border border-border print:border-black text-center print:hidden py-0.5">
+                    <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(item.id)} className="h-5 w-5 text-destructive hover:text-destructive">
+                      <Trash2 className="h-3 w-3" />
                     </Button>
                   </TableCell>
                 </TableRow>
               ))}
               {/* Empty rows to fill the form */}
               {Array.from({ length: emptyRows }).map((_, i) => (
-                <TableRow key={`empty-${i}`} className="print:border-black">
-                  <TableCell className="border border-border print:border-black text-center text-muted-foreground">{items.length + i + 1}</TableCell>
-                  <TableCell className="border border-border print:border-black">&nbsp;</TableCell>
-                  <TableCell className="border border-border print:border-black"></TableCell>
-                  <TableCell className="border border-border print:border-black"></TableCell>
-                  <TableCell className="border border-border print:border-black"></TableCell>
-                  <TableCell className="border border-border print:border-black"></TableCell>
-                  <TableCell className="border border-border print:border-black"></TableCell>
-                  <TableCell className="border border-border print:border-black print:hidden"></TableCell>
+                <TableRow key={`empty-${i}`} className="print:border-black h-6">
+                  <TableCell className="border border-border print:border-black text-center text-muted-foreground py-0.5 text-xs">{items.length + i + 1}</TableCell>
+                  <TableCell className="border border-border print:border-black py-0.5">&nbsp;</TableCell>
+                  <TableCell className="border border-border print:border-black py-0.5"></TableCell>
+                  <TableCell className="border border-border print:border-black py-0.5"></TableCell>
+                  <TableCell className="border border-border print:border-black py-0.5"></TableCell>
+                  <TableCell className="border border-border print:border-black py-0.5"></TableCell>
+                  <TableCell className="border border-border print:border-black py-0.5"></TableCell>
+                  <TableCell className="border border-border print:border-black print:hidden py-0.5"></TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -319,6 +325,19 @@ export default function StockOut() {
                 <p>วันที่............./................./.................</p>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Digital Signature Section - hidden when printing */}
+        <div className="mt-6 print:hidden">
+          <h3 className="text-sm font-semibold mb-3">ลายเซ็นดิจิตอล</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <SignaturePad label="ผู้เขียนคำขอ / ผู้รับวัสดุ" />
+            <SignaturePad label="หัวหน้ากลุ่มงาน / หน่วยงาน" />
+            <SignaturePad label="ผู้จ่ายและลงทะเบียน" />
+            <SignaturePad label="ผู้เบิก" />
+            <SignaturePad label="ผู้อนุมัติเบิกจ่าย" />
+            <SignaturePad label="หัวหน้าหน่วยพัสดุ" />
           </div>
         </div>
       </div>

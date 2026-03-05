@@ -100,7 +100,7 @@ export default function StockOut() {
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
   // Generate empty rows to fill the form
-  const emptyRows = Math.max(0, 17 - items.length);
+  const emptyRows = Math.max(0, 10 - items.length);
 
   return (
     <div className="space-y-4">
@@ -125,21 +125,22 @@ export default function StockOut() {
 
 
       {/* Printable Form */}
-      <div className="border border-border rounded-lg p-6 bg-background print:border-black print:rounded-none print:p-4 print:text-black" id="requisition-form">
+      <div className="border border-border rounded-lg p-6 bg-background print:border-none print:rounded-none print:p-2 print:text-black print:text-[12px]" id="requisition-form">
         <style>{`
           @media print {
+            @page { size: A4; margin: 10mm; }
             body * { visibility: hidden; }
             #requisition-form, #requisition-form * { visibility: visible; }
-            #requisition-form { position: absolute; left: 0; top: 0; width: 100%; font-size: 14px; }
+            #requisition-form { position: absolute; left: 0; top: 0; width: 100%; font-size: 12px; }
             .print\\:hidden { display: none !important; }
           }
         `}</style>
 
         {/* Header */}
-        <div className="text-center space-y-1 mb-4">
-          <p className="text-sm text-muted-foreground print:text-black">เลขที่รับ...............</p>
-          <h1 className="text-lg font-bold">ใบเบิกวัสดุสำนักงาน / งานบ้านงานครัว</h1>
-          <p className="text-sm text-muted-foreground print:text-black">โรงพยาบาลจังหวัด................</p>
+        <div className="relative mb-3">
+          <p className="text-sm text-muted-foreground print:text-black text-right">เลขที่รับ...............</p>
+          <h1 className="text-lg font-bold text-center">ใบเบิกวัสดุสำนักงาน / งานบ้านงานครัว</h1>
+          <p className="text-sm text-muted-foreground print:text-black text-center">โรงพยาบาลประชาธิปัตย์ อำเภอธัญบุรี</p>
         </div>
 
         {/* Form Info */}
@@ -269,70 +270,53 @@ export default function StockOut() {
           </Table>
         </div>
 
-        {/* Signature Section */}
-        <div className="mt-10 text-sm">
-          {/* Row 1: Requester & Department Head */}
-          <div className="grid grid-cols-2 gap-12">
-            <div className="text-center space-y-8">
-              <p className="font-medium text-left">ผู้เบิก</p>
-              <div className="space-y-1 pt-4">
-                <p>ลงชื่อ..............................................</p>
-                <p>(.............................................)</p>
-                <p>ตำแหน่ง........................................</p>
-                <p>วันที่......../............/............</p>
+        {/* Signature Section - matching official form */}
+        <div className="mt-4 text-xs print:text-[11px]">
+          {/* Row 1: Two columns */}
+          <div className="grid grid-cols-2 gap-6">
+            {/* Left Column */}
+            <div className="space-y-1">
+              <p className="font-bold">เรียน หัวหน้ากลุ่มงาน / หน่วยงาน</p>
+              <p className="pl-4">- เพื่อเห็นชอบให้เบิกวัสดุเพื่อใช้ในงานราชการ ใน</p>
+              <p>หน่วยงาน.................................................................</p>
+              <div className="mt-3 space-y-1">
+                <p>ลงชื่อ..........................................ผู้เขียนคำขอ</p>
+                <p>(..........................................) และ(ผู้รับวัสดุ)</p>
+              </div>
+              <div className="flex gap-4 mt-2">
+                <label className="flex items-center gap-1"><span className="inline-block w-4 h-4 border border-current print:border-black"></span> เห็นชอบ</label>
+              </div>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-1"><span className="inline-block w-4 h-4 border border-current print:border-black"></span> ส่งคืนแก้ไขคำขอ</label>
+              </div>
+              <div className="mt-3 space-y-1">
+                <p>(ลงชื่อ)...........................................................(ผู้เบิก)</p>
+                <p>(..................................................................)</p>
+                <p>ตำแหน่ง.............................................................</p>
+                <p>หัวหน้ากลุ่มงาน / หน่วยงาน.................................</p>
+                <p>วันที่............./................./.................</p>
               </div>
             </div>
-            <div className="text-center space-y-8">
-              <p className="font-medium text-left">หัวหน้ากลุ่มงาน / หน่วยงาน</p>
-              <div className="space-y-1 pt-4">
-                <p>ลงชื่อ..............................................</p>
-                <p>(.............................................)</p>
-                <p>ตำแหน่ง........................................</p>
-                <p>วันที่......../............/............</p>
-              </div>
-            </div>
-          </div>
 
-          {/* Row 2: Issuer & Approver */}
-          <div className="grid grid-cols-2 gap-12 mt-10">
-            <div className="text-center space-y-8">
-              <p className="font-medium text-left">ผู้จ่ายของและตรวจนับ</p>
-              <div className="space-y-1 pt-4">
-                <p>ลงชื่อ..............................................</p>
-                <p>(.............................................)</p>
-                <p>ตำแหน่ง........................................</p>
-                <p>วันที่......../............/............</p>
+            {/* Right Column */}
+            <div className="space-y-1">
+              <p className="font-bold">เรียน หัวหน้าหน่วยพัสดุ</p>
+              <p className="pl-4">- เพื่ออนุมัติเบิกจ่ายวัสดุตามคำขอข้างต้น</p>
+              <div className="mt-3 space-y-1">
+                <p>(ลงชื่อ)........................................(ผู้จ่ายและลงทะเบียน)</p>
+                <p>( ..........................................)</p>
+                <p>ตำแหน่ง ........................................</p>
+                <p>วันที่............./................./.................</p>
               </div>
-            </div>
-            <div className="text-center space-y-8">
-              <p className="font-medium text-left">ผู้อนุมัติ</p>
-              <div className="space-y-1 pt-4">
-                <p>ลงชื่อ..............................................</p>
-                <p>(.............................................)</p>
-                <p>ตำแหน่ง........................................</p>
-                <p>วันที่......../............/............</p>
+              <div className="mt-2 space-y-1">
+                <p>- อนุมัติ</p>
+                <p>- รับทราบการเบิกจ่าย</p>
               </div>
-            </div>
-          </div>
-
-          {/* Row 3: Receiver */}
-          <div className="grid grid-cols-2 gap-12 mt-10">
-            <div className="text-center space-y-8">
-              <p className="font-medium text-left">ผู้รับของ</p>
-              <div className="space-y-1 pt-4">
-                <p>ลงชื่อ..............................................</p>
-                <p>(.............................................)</p>
-                <p>ตำแหน่ง........................................</p>
-                <p>วันที่......../............/............</p>
-              </div>
-            </div>
-            <div className="text-center space-y-8">
-              <p className="font-medium text-left">หัวหน้าหน่วยพัสดุ</p>
-              <div className="space-y-1 pt-4">
-                <p>ลงชื่อ..............................................</p>
-                <p>(.............................................)</p>
-                <p>ตำแหน่ง........................................</p>
-                <p>วันที่......../............/............</p>
+              <div className="mt-3 space-y-1">
+                <p>(ลงชื่อ)........................................(ผู้อนุมัติเบิกจ่าย)</p>
+                <p>( ..........................................) <span className="font-bold">หัวหน้าหน่วยพัสดุ</span></p>
+                <p>ตำแหน่ง ........................................</p>
+                <p>วันที่............./................./.................</p>
               </div>
             </div>
           </div>

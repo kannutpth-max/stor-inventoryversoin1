@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Plus, Trash2, PackageMinus, Calendar, FileText, Loader2, Printer } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Trash2, PackageMinus, Calendar, Loader2, Printer, Save } from "lucide-react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import SignaturePad from "@/components/SignaturePad";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,22 +17,34 @@ import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { useSheetData, useSheetCreate } from "@/hooks/useGoogleSheets";
+import { useSheetData, useSheetCreate, useSheetUpdate } from "@/hooks/useGoogleSheets";
 
 interface Department { id: string; name: string; }
 interface Product { id: string; name: string; unit_id: string; stock: string; }
 interface Unit { id: string; name: string; }
+interface StockOutRecord {
+  id: string; date: string; requisition_no: string; department_id: string;
+  product_id: string; quantity: string; status?: string; created_at: string;
+}
 
 interface StockOutItem {
-  id: string; productId: string; productName: string; unit: string;
-  quantity: number; stock: number;
+  id: string; recordId?: string; productId: string; productName: string; unit: string;
+  quantity: number; dispenseQty: number; stock: number; status?: string;
 }
 
 export default function StockOut() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const editReqNo = searchParams.get("edit");
+  const isEditMode = !!editReqNo;
+
   const { data: departments = [] } = useSheetData<Department>("departments");
   const { data: products = [] } = useSheetData<Product>("products");
   const { data: units = [] } = useSheetData<Unit>("units");
+  const { data: stockOuts = [] } = useSheetData<StockOutRecord>("stock_out");
   const createMutation = useSheetCreate("stock_out");
+  const updateStockOut = useSheetUpdate("stock_out");
+  const updateProduct = useSheetUpdate("products");
 
   const [date, setDate] = useState<Date>(new Date());
   const [withdrawNo, setWithdrawNo] = useState("");
@@ -41,10 +54,39 @@ export default function StockOut() {
   const [items, setItems] = useState<StockOutItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState("");
   const [quantity, setQuantity] = useState("");
+  const [loaded, setLoaded] = useState(false);
   const { toast } = useToast();
 
   const getUnitName = (unitId: string) => units.find(u => u.id === unitId)?.name || unitId;
   const getDepartmentName = (id: string) => departments.find(d => d.id === id)?.name || "";
+
+  // Load existing requisition data in edit mode
+  useEffect(() => {
+    if (isEditMode && stockOuts.length > 0 && products.length > 0 && !loaded) {
+      const records = stockOuts.filter(r => r.requisition_no === editReqNo);
+      if (records.length > 0) {
+        const first = records[0];
+        setDate(new Date(first.date));
+        setWithdrawNo(first.requisition_no);
+        setDepartmentId(first.department_id);
+        setItems(records.map(r => {
+          const product = products.find(p => p.id === r.product_id);
+          return {
+            id: `item-${r.id}`,
+            recordId: r.id,
+            productId: r.product_id,
+            productName: product?.name || r.product_id,
+            unit: product ? getUnitName(product.unit_id) : "-",
+            quantity: parseInt(r.quantity) || 0,
+            dispenseQty: 0,
+            stock: parseInt(product?.stock || "0"),
+            status: r.status,
+          };
+        }));
+        setLoaded(true);
+      }
+    }
+  }, [isEditMode, editReqNo, stockOuts, products, loaded]);
 
   const handleAddItem = () => {
     if (!selectedProduct || !quantity) {
@@ -59,10 +101,9 @@ export default function StockOut() {
       toast({ variant: "destructive", title: "จำนวนเกินกว่าสินค้าคงเหลือ" });
       return;
     }
-
     setItems([...items, {
       id: `item-${Date.now()}`, productId: product.id, productName: product.name,
-      unit: getUnitName(product.unit_id), quantity: qty, stock,
+      unit: getUnitName(product.unit_id), quantity: qty, dispenseQty: 0, stock,
     }]);
     setSelectedProduct(""); setQuantity("");
   };
@@ -94,36 +135,78 @@ export default function StockOut() {
     }
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handleDispense = async () => {
+    const toDispense = items.filter(i => i.dispenseQty > 0 && i.status !== "dispensed");
+    if (toDispense.length === 0) {
+      toast({ variant: "destructive", title: "กรุณากรอกจำนวนจ่ายอย่างน้อย 1 รายการ" });
+      return;
+    }
+    try {
+      for (const item of toDispense) {
+        const product = products.find(p => p.id === item.productId);
+        if (!product) continue;
+        const currentStock = parseInt(product.stock) || 0;
+        if (item.dispenseQty > currentStock) {
+          toast({ variant: "destructive", title: `${item.productName} คงเหลือไม่เพียงพอ (คงเหลือ ${currentStock})` });
+          return;
+        }
+        await updateProduct.mutateAsync({
+          id: product.id,
+          data: { ...product, stock: (currentStock - item.dispenseQty).toString() },
+        });
+        if (item.recordId) {
+          const record = stockOuts.find(r => r.id === item.recordId);
+          if (record) {
+            await updateStockOut.mutateAsync({
+              id: item.recordId,
+              data: { ...record, status: "dispensed" },
+            });
+          }
+        }
+      }
+      toast({ title: "จ่ายสินค้าและตัดสต็อกสำเร็จ" });
+      navigate("/stock-out-manage");
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "เกิดข้อผิดพลาด", description: e.message });
+    }
   };
 
-  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+  const handlePrint = () => window.print();
 
-  // Generate empty rows to fill the form
+  const updateDispenseQty = (id: string, qty: number) => {
+    setItems(items.map(i => i.id === id ? { ...i, dispenseQty: qty } : i));
+  };
+
   const emptyRows = Math.max(0, 17 - items.length);
 
   return (
     <div className="space-y-4">
-      {/* Action buttons - hidden when printing */}
+      {/* Action buttons */}
       <div className="flex items-center justify-between print:hidden">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <PackageMinus className="h-5 w-5" />
-          เบิกสินค้า
+          {isEditMode ? `จ่ายสินค้า - ใบเบิก ${editReqNo}` : "เบิกสินค้า"}
         </h2>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handlePrint}>
             <Printer className="mr-2 h-4 w-4" />
             พิมพ์ใบเบิก
           </Button>
-          <Button onClick={handleSave} disabled={createMutation.isPending}>
-            {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            <PackageMinus className="mr-2 h-4 w-4" />
-            บันทึกรายการเบิก
-          </Button>
+          {isEditMode ? (
+            <Button onClick={handleDispense} disabled={updateStockOut.isPending || updateProduct.isPending}>
+              {(updateStockOut.isPending || updateProduct.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Save className="mr-2 h-4 w-4" />
+              บันทึกการจ่าย
+            </Button>
+          ) : (
+            <Button onClick={handleSave} disabled={createMutation.isPending}>
+              {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <PackageMinus className="mr-2 h-4 w-4" />
+              บันทึกรายการเบิก
+            </Button>
+          )}
         </div>
       </div>
-
 
       {/* Printable Form */}
       <div className="border border-border rounded-lg p-6 bg-background print:border-none print:rounded-none print:p-2 print:text-black print:text-[11px]" id="requisition-form">
@@ -155,7 +238,7 @@ export default function StockOut() {
             <Label className="whitespace-nowrap font-medium">วันที่:</Label>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className={cn("flex-1 justify-start text-left font-normal h-8 print:border-0 print:border-b print:rounded-none print:border-black print:px-0", !date && "text-muted-foreground")}>
+                <Button variant="outline" size="sm" className={cn("flex-1 justify-start text-left font-normal h-8 print:border-0 print:border-b print:rounded-none print:border-black print:px-0", !date && "text-muted-foreground")} disabled={isEditMode}>
                   <Calendar className="mr-2 h-3 w-3 print:hidden" />
                   {date ? format(date, "d MMMM yyyy", { locale: th }) : "เลือกวันที่"}
                 </Button>
@@ -167,7 +250,7 @@ export default function StockOut() {
           </div>
           <div className="flex items-center gap-2">
             <Label className="whitespace-nowrap font-medium">เลขที่:</Label>
-            <Input value={withdrawNo} onChange={(e) => setWithdrawNo(e.target.value)} placeholder="WD-XXXX" className="h-8 text-sm print:border-0 print:border-b print:rounded-none print:border-black print:px-0" />
+            <Input value={withdrawNo} onChange={(e) => setWithdrawNo(e.target.value)} placeholder="WD-XXXX" className="h-8 text-sm print:border-0 print:border-b print:rounded-none print:border-black print:px-0" disabled={isEditMode} />
           </div>
         </div>
 
@@ -191,7 +274,7 @@ export default function StockOut() {
 
         <div className="flex items-center gap-2 mb-4 text-sm">
           <Label className="whitespace-nowrap font-medium">หน่วยงานที่เบิก (ฝ่ายงาน):</Label>
-          <Select value={departmentId} onValueChange={setDepartmentId}>
+          <Select value={departmentId} onValueChange={setDepartmentId} disabled={isEditMode}>
             <SelectTrigger className="h-8 text-sm flex-1 print:border-0 print:border-b print:rounded-none print:border-black">
               <SelectValue placeholder="เลือกหน่วยงาน" />
             </SelectTrigger>
@@ -203,25 +286,27 @@ export default function StockOut() {
 
         <p className="text-sm mb-3">มีความประสงค์ขอเบิกวัสดุที่ใช้ในราชการเพื่อจ่ายรายการดังต่อไปนี้</p>
 
-        {/* Add item section */}
-        <div className="rounded-lg border p-3 bg-muted/30 mb-3 print:hidden">
-          <div className="grid gap-3 md:grid-cols-4 items-end">
-            <div className="md:col-span-2">
-              <Label className="text-xs mb-1 block">เลือกสินค้า</Label>
-              <Select value={selectedProduct} onValueChange={setSelectedProduct}>
-                <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="เลือกสินค้า" /></SelectTrigger>
-                <SelectContent>
-                  {products.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name} (คงเหลือ: {p.stock || 0})</SelectItem>))}
-                </SelectContent>
-              </Select>
+        {/* Add item section - only in create mode */}
+        {!isEditMode && (
+          <div className="rounded-lg border p-3 bg-muted/30 mb-3 print:hidden">
+            <div className="grid gap-3 md:grid-cols-4 items-end">
+              <div className="md:col-span-2">
+                <Label className="text-xs mb-1 block">เลือกสินค้า</Label>
+                <Select value={selectedProduct} onValueChange={setSelectedProduct}>
+                  <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="เลือกสินค้า" /></SelectTrigger>
+                  <SelectContent>
+                    {products.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name} (คงเหลือ: {p.stock || 0})</SelectItem>))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs mb-1 block">จำนวน</Label>
+                <Input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="จำนวน" className="h-8 text-sm" />
+              </div>
+              <Button onClick={handleAddItem} size="sm" className="h-8"><Plus className="mr-1 h-3 w-3" />เพิ่มรายการ</Button>
             </div>
-            <div>
-              <Label className="text-xs mb-1 block">จำนวน</Label>
-              <Input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="จำนวน" className="h-8 text-sm" />
-            </div>
-            <Button onClick={handleAddItem} size="sm" className="h-8"><Plus className="mr-1 h-3 w-3" />เพิ่มรายการ</Button>
           </div>
-        </div>
+        )}
 
         {/* Table */}
         <div className="border border-border print:border-black">
@@ -232,14 +317,24 @@ export default function StockOut() {
                 <TableHead rowSpan={2} className="border border-border print:border-black text-center text-foreground">รายละเอียด</TableHead>
                 <TableHead rowSpan={2} className="border border-border print:border-black text-center w-20 text-foreground">หน่วย</TableHead>
                 <TableHead colSpan={2} className="border border-border print:border-black text-center text-foreground">คงเหลือ</TableHead>
-                <TableHead colSpan={2} className="border border-border print:border-black text-center text-foreground">จำนวน</TableHead>
-                <TableHead rowSpan={2} className="border border-border print:border-black text-center text-foreground print:hidden w-12">ลบ</TableHead>
+                {isEditMode ? (
+                  <TableHead colSpan={2} className="border border-border print:border-black text-center text-foreground">จำนวน</TableHead>
+                ) : (
+                  <TableHead rowSpan={2} className="border border-border print:border-black text-center w-20 text-foreground">จำนวนเบิก</TableHead>
+                )}
+                {!isEditMode && (
+                  <TableHead rowSpan={2} className="border border-border print:border-black text-center text-foreground print:hidden w-12">ลบ</TableHead>
+                )}
               </TableRow>
               <TableRow className="print:border-black">
                 <TableHead className="border border-border print:border-black text-center w-20 text-foreground">ก่อนจ่าย</TableHead>
                 <TableHead className="border border-border print:border-black text-center w-20 text-foreground">หลังจ่าย</TableHead>
-                <TableHead className="border border-border print:border-black text-center w-16 text-foreground">เบิก</TableHead>
-                <TableHead className="border border-border print:border-black text-center w-16 text-foreground">จ่าย</TableHead>
+                {isEditMode && (
+                  <>
+                    <TableHead className="border border-border print:border-black text-center w-16 text-foreground">เบิก</TableHead>
+                    <TableHead className="border border-border print:border-black text-center w-16 text-foreground">จ่าย</TableHead>
+                  </>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -249,17 +344,43 @@ export default function StockOut() {
                   <TableCell className="border border-border print:border-black py-0.5 text-xs">{item.productName}</TableCell>
                   <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">{item.unit}</TableCell>
                   <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">{item.stock.toLocaleString()}</TableCell>
-                  <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">{(item.stock - item.quantity).toLocaleString()}</TableCell>
-                  <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">{item.quantity.toLocaleString()}</TableCell>
-                  <TableCell className="border border-border print:border-black text-center py-0.5 text-xs"></TableCell>
-                  <TableCell className="border border-border print:border-black text-center print:hidden py-0.5">
-                    <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(item.id)} className="h-5 w-5 text-destructive hover:text-destructive">
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                  <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">
+                    {isEditMode && item.dispenseQty > 0
+                      ? (item.stock - item.dispenseQty).toLocaleString()
+                      : !isEditMode
+                        ? (item.stock - item.quantity).toLocaleString()
+                        : item.stock.toLocaleString()}
                   </TableCell>
+                  {isEditMode ? (
+                    <>
+                      <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">{item.quantity.toLocaleString()}</TableCell>
+                      <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">
+                        {item.status === "dispensed" ? (
+                          <span className="text-muted-foreground">จ่ายแล้ว</span>
+                        ) : (
+                          <Input
+                            type="number"
+                            value={item.dispenseQty || ""}
+                            onChange={(e) => updateDispenseQty(item.id, parseInt(e.target.value) || 0)}
+                            className="h-6 w-16 text-xs text-center p-0 mx-auto print:border-0 print:border-b print:rounded-none"
+                            max={item.quantity}
+                          />
+                        )}
+                      </TableCell>
+                    </>
+                  ) : (
+                    <>
+                      <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">{item.quantity.toLocaleString()}</TableCell>
+                      <TableCell className="border border-border print:border-black text-center print:hidden py-0.5">
+                        <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(item.id)} className="h-5 w-5 text-destructive hover:text-destructive">
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </TableCell>
+                    </>
+                  )}
                 </TableRow>
               ))}
-              {/* Empty rows to fill the form */}
+              {/* Empty rows */}
               {Array.from({ length: emptyRows }).map((_, i) => (
                 <TableRow key={`empty-${i}`} className="print:border-black h-6">
                   <TableCell className="border border-border print:border-black text-center text-muted-foreground py-0.5 text-xs">{items.length + i + 1}</TableCell>
@@ -267,18 +388,25 @@ export default function StockOut() {
                   <TableCell className="border border-border print:border-black py-0.5"></TableCell>
                   <TableCell className="border border-border print:border-black py-0.5"></TableCell>
                   <TableCell className="border border-border print:border-black py-0.5"></TableCell>
-                  <TableCell className="border border-border print:border-black py-0.5"></TableCell>
-                  <TableCell className="border border-border print:border-black py-0.5"></TableCell>
-                  <TableCell className="border border-border print:border-black print:hidden py-0.5"></TableCell>
+                  {isEditMode ? (
+                    <>
+                      <TableCell className="border border-border print:border-black py-0.5"></TableCell>
+                      <TableCell className="border border-border print:border-black py-0.5"></TableCell>
+                    </>
+                  ) : (
+                    <>
+                      <TableCell className="border border-border print:border-black py-0.5"></TableCell>
+                      <TableCell className="border border-border print:border-black print:hidden py-0.5"></TableCell>
+                    </>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </div>
 
-        {/* Signature Section - matching official form */}
+        {/* Signature Section */}
         <div className="mt-4 text-xs print:text-[11px]">
-          {/* Row 1: Two columns */}
           <div className="grid grid-cols-2 gap-6">
             {/* Left Column */}
             <div className="space-y-1">
@@ -303,7 +431,6 @@ export default function StockOut() {
                 <p>วันที่............./................./.................</p>
               </div>
             </div>
-
             {/* Right Column */}
             <div className="space-y-1">
               <p className="font-bold">เรียน หัวหน้าหน่วยพัสดุ</p>
@@ -328,7 +455,7 @@ export default function StockOut() {
           </div>
         </div>
 
-        {/* Digital Signature Section - hidden when printing */}
+        {/* Digital Signature Section */}
         <div className="mt-6 print:hidden">
           <h3 className="text-sm font-semibold mb-3">ลายเซ็นดิจิตอล</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">

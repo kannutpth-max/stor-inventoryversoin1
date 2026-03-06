@@ -187,6 +187,11 @@ export default function StockOut() {
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <PackageMinus className="h-5 w-5" />
           {isEditMode ? `จ่ายสินค้า - ใบเบิก ${editReqNo}` : "เบิกสินค้า"}
+          {isEditMode && (
+            <span className={`ml-2 text-sm font-normal px-2 py-0.5 rounded ${items.every(i => i.status === "dispensed") ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+              {items.every(i => i.status === "dispensed") ? "จ่ายของแล้ว" : "รอจ่าย"}
+            </span>
+          )}
         </h2>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handlePrint}>
@@ -194,11 +199,18 @@ export default function StockOut() {
             พิมพ์ใบเบิก
           </Button>
           {isEditMode ? (
-            <Button onClick={handleDispense} disabled={updateStockOut.isPending || updateProduct.isPending}>
-              {(updateStockOut.isPending || updateProduct.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              <Save className="mr-2 h-4 w-4" />
-              บันทึกการจ่าย
-            </Button>
+            items.every(i => i.status === "dispensed") ? (
+              <Button disabled variant="outline">
+                <Save className="mr-2 h-4 w-4" />
+                จ่ายของแล้ว
+              </Button>
+            ) : (
+              <Button onClick={handleDispense} disabled={updateStockOut.isPending || updateProduct.isPending}>
+                {(updateStockOut.isPending || updateProduct.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Save className="mr-2 h-4 w-4" />
+                จ่ายของแล้ว
+              </Button>
+            )
           ) : (
             <Button onClick={handleSave} disabled={createMutation.isPending}>
               {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

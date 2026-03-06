@@ -137,9 +137,9 @@ export default function StockOut() {
   };
 
   const handleDispense = async () => {
-    const toDispense = items.filter(i => i.dispenseQty > 0 && i.status !== "dispensed");
+    const toDispense = items.filter(i => i.status !== "dispensed");
     if (toDispense.length === 0) {
-      toast({ variant: "destructive", title: "กรุณากรอกจำนวนจ่ายอย่างน้อย 1 รายการ" });
+      toast({ title: "จ่ายของครบทุกรายการแล้ว" });
       return;
     }
     try {
@@ -147,26 +147,27 @@ export default function StockOut() {
         const product = products.find(p => p.id === item.productId);
         if (!product) continue;
         const currentStock = parseInt(product.stock) || 0;
-        if (item.dispenseQty > currentStock) {
+        const dispenseQty = item.dispenseQty || item.quantity;
+        if (dispenseQty > currentStock) {
           toast({ variant: "destructive", title: `${item.productName} คงเหลือไม่เพียงพอ (คงเหลือ ${currentStock})` });
           return;
         }
         await updateProduct.mutateAsync({
           id: product.id,
-          data: { ...product, stock: (currentStock - item.dispenseQty).toString() },
+          data: { ...product, stock: (currentStock - dispenseQty).toString() },
         });
         if (item.recordId) {
           const record = stockOuts.find(r => r.id === item.recordId);
           if (record) {
             await updateStockOut.mutateAsync({
               id: item.recordId,
-              data: { ...record, status: "dispensed" },
+              data: { ...record, status: "dispensed", quantity: dispenseQty.toString() },
             });
           }
         }
       }
       toast({ title: "จ่ายสินค้าและตัดสต็อกสำเร็จ" });
-      navigate("/stock-out-manage");
+      setItems(items.map(i => ({ ...i, status: "dispensed" })));
     } catch (e: any) {
       toast({ variant: "destructive", title: "เกิดข้อผิดพลาด", description: e.message });
     }

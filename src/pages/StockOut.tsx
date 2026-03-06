@@ -71,14 +71,15 @@ export default function StockOut() {
         setDepartmentId(first.department_id);
         setItems(records.map(r => {
           const product = products.find(p => p.id === r.product_id);
+          const qty = parseInt(r.quantity) || 0;
           return {
             id: `item-${r.id}`,
             recordId: r.id,
             productId: r.product_id,
             productName: product?.name || r.product_id,
             unit: product ? getUnitName(product.unit_id) : "-",
-            quantity: parseInt(r.quantity) || 0,
-            dispenseQty: 0,
+            quantity: qty,
+            dispenseQty: r.status === "dispensed" ? qty : qty,
             stock: parseInt(product?.stock || "0"),
             status: r.status,
           };
@@ -136,9 +137,9 @@ export default function StockOut() {
   };
 
   const handleDispense = async () => {
-    const toDispense = items.filter(i => i.dispenseQty > 0 && i.status !== "dispensed");
+    const toDispense = items.filter(i => i.status !== "dispensed");
     if (toDispense.length === 0) {
-      toast({ variant: "destructive", title: "กรุณากรอกจำนวนจ่ายอย่างน้อย 1 รายการ" });
+      toast({ title: "จ่ายของครบทุกรายการแล้ว" });
       return;
     }
     try {
@@ -146,26 +147,27 @@ export default function StockOut() {
         const product = products.find(p => p.id === item.productId);
         if (!product) continue;
         const currentStock = parseInt(product.stock) || 0;
-        if (item.dispenseQty > currentStock) {
+        const dispenseQty = item.dispenseQty || item.quantity;
+        if (dispenseQty > currentStock) {
           toast({ variant: "destructive", title: `${item.productName} คงเหลือไม่เพียงพอ (คงเหลือ ${currentStock})` });
           return;
         }
         await updateProduct.mutateAsync({
           id: product.id,
-          data: { ...product, stock: (currentStock - item.dispenseQty).toString() },
+          data: { ...product, stock: (currentStock - dispenseQty).toString() },
         });
         if (item.recordId) {
           const record = stockOuts.find(r => r.id === item.recordId);
           if (record) {
             await updateStockOut.mutateAsync({
               id: item.recordId,
-              data: { ...record, status: "dispensed" },
+              data: { ...record, status: "dispensed", quantity: dispenseQty.toString() },
             });
           }
         }
       }
       toast({ title: "จ่ายสินค้าและตัดสต็อกสำเร็จ" });
-      navigate("/stock-out-manage");
+      setItems(items.map(i => ({ ...i, status: "dispensed" })));
     } catch (e: any) {
       toast({ variant: "destructive", title: "เกิดข้อผิดพลาด", description: e.message });
     }
@@ -186,6 +188,11 @@ export default function StockOut() {
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <PackageMinus className="h-5 w-5" />
           {isEditMode ? `จ่ายสินค้า - ใบเบิก ${editReqNo}` : "เบิกสินค้า"}
+          {isEditMode && (
+            <span className={`ml-2 text-sm font-normal px-2 py-0.5 rounded ${items.every(i => i.status === "dispensed") ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+              {items.every(i => i.status === "dispensed") ? "จ่ายของแล้ว" : "รอจ่าย"}
+            </span>
+          )}
         </h2>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handlePrint}>
@@ -193,11 +200,18 @@ export default function StockOut() {
             พิมพ์ใบเบิก
           </Button>
           {isEditMode ? (
-            <Button onClick={handleDispense} disabled={updateStockOut.isPending || updateProduct.isPending}>
-              {(updateStockOut.isPending || updateProduct.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              <Save className="mr-2 h-4 w-4" />
-              บันทึกการจ่าย
-            </Button>
+            items.every(i => i.status === "dispensed") ? (
+              <Button disabled variant="outline">
+                <Save className="mr-2 h-4 w-4" />
+                จ่ายของแล้ว
+              </Button>
+            ) : (
+              <Button onClick={handleDispense} disabled={updateStockOut.isPending || updateProduct.isPending}>
+                {(updateStockOut.isPending || updateProduct.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Save className="mr-2 h-4 w-4" />
+                จ่ายของแล้ว
+              </Button>
+            )
           ) : (
             <Button onClick={handleSave} disabled={createMutation.isPending}>
               {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

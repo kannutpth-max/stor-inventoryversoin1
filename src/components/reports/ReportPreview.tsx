@@ -223,54 +223,156 @@ function StockBalanceReport({ products, getCategoryName, getUnitName }: {
   );
 }
 
-function StockCardReport({ products, stockIn, stockOut, getProductUnit, getCompanyName, getDepartmentName }: {
+function StockCardReport({ products, stockIn, stockOut, getProductUnit, getCompanyName, getDepartmentName, getCategoryName, dateFrom }: {
   products: Product[]; stockIn: StockInRecord[]; stockOut: StockOutRecord[];
   getProductUnit: (id: string) => string; getCompanyName: (id: string) => string; getDepartmentName: (id: string) => string;
+  getCategoryName: (id: string) => string; dateFrom?: Date;
 }) {
+  const formatThaiDate = (dateStr: string) => {
+    try {
+      const d = parseISO(dateStr);
+      return format(d, "d MMM yy", { locale: th });
+    } catch { return dateStr; }
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {products.length === 0 ? (
         <div className="text-center text-muted-foreground py-8">ไม่พบข้อมูล</div>
-      ) : products.map(product => {
+      ) : products.map((product, pIdx) => {
         const pIn = stockIn.filter(r => r.product_id === product.id).map(r => ({ ...r, type: "in" as const }));
         const pOut = stockOut.filter(r => r.product_id === product.id).map(r => ({ ...r, type: "out" as const }));
         const movements = [...pIn, ...pOut].sort((a, b) => (a.date || "").localeCompare(b.date || ""));
         if (movements.length === 0 && pIn.length === 0 && pOut.length === 0) return null;
 
-        let balance = 0;
+        const price = parseFloat(product.price) || 0;
+        const unitName = getProductUnit(product.id);
+        const categoryName = getCategoryName(product.category_id);
+
+        // Calculate opening balance (stock before the filtered period)
+        let openingBalance = parseInt(product.stock) || 0;
+        // Subtract all filtered movements to get the starting balance
+        const totalIn = pIn.reduce((s, r) => s + (parseInt(r.quantity) || 0), 0);
+        const totalOut = pOut.reduce((s, r) => s + (parseInt(r.quantity) || 0), 0);
+        openingBalance = openingBalance - totalIn + totalOut;
+
+        let balance = openingBalance;
         const rows = movements.map(m => {
           const qty = parseInt(m.quantity) || 0;
           if (m.type === "in") balance += qty; else balance -= qty;
-          return { ...m, qty, balance };
+          return { ...m, qty, balance, totalPrice: balance * price };
         });
 
+        const openingMonth = dateFrom ? format(dateFrom, "MMMM yyyy", { locale: th }) : "";
+
         return (
-          <div key={product.id} className="rounded-md border">
-            <div className="p-3 bg-muted/50 border-b font-medium">
-              {product.id} - {product.name} ({getProductUnit(product.id)})
+          <div key={product.id} className="rounded-md border bg-card print:break-before-page">
+            {/* Header - บัญชีวัสดุ */}
+            <div className="text-center py-3 border-b">
+              <h2 className="text-lg font-bold">บัญชีวัสดุ</h2>
             </div>
+
+            {/* Product Info Header */}
+            <div className="grid grid-cols-2 gap-x-6 gap-y-1 p-4 border-b text-sm">
+              <div className="flex gap-2">
+                <span className="text-muted-foreground min-w-[100px]">แผ่นที่</span>
+                <span>: {String(pIdx + 1).padStart(3, "0")}</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-muted-foreground min-w-[100px]">ส่วนราชการ</span>
+                <span>: -</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-muted-foreground min-w-[100px]">ประเภท</span>
+                <span>: {categoryName}</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-muted-foreground min-w-[100px]">กลุ่มงาน</span>
+                <span>: -</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-muted-foreground min-w-[100px]">ชื่อหรือชนิดวัสดุ</span>
+                <span>: {product.name}</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-muted-foreground min-w-[100px]">หน่วยงาน</span>
+                <span>: -</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-muted-foreground min-w-[100px]">ขนาดหรือลักษณะ</span>
+                <span>: -</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-muted-foreground min-w-[100px]">รหัส</span>
+                <span>: {product.id}</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-muted-foreground min-w-[100px]">หน่วยนับ</span>
+                <span>: {unitName}</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-muted-foreground min-w-[100px]">จำนวนอย่างสูง</span>
+                <span>: -</span>
+              </div>
+              <div></div>
+              <div className="flex gap-2">
+                <span className="text-muted-foreground min-w-[100px]">จำนวนอย่างต่ำ</span>
+                <span>: {product.min_stock || "-"}</span>
+              </div>
+            </div>
+
+            {/* Table */}
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>วันที่</TableHead>
-                  <TableHead>รายการ</TableHead>
-                  <TableHead className="text-right">รับเข้า</TableHead>
-                  <TableHead className="text-right">เบิกออก</TableHead>
-                  <TableHead className="text-right">คงเหลือ</TableHead>
+                <TableRow className="bg-muted/50">
+                  <TableHead rowSpan={2} className="border-r text-center align-middle">วัน เดือน ปี</TableHead>
+                  <TableHead rowSpan={2} className="border-r text-center align-middle">รับจาก/จ่ายให้</TableHead>
+                  <TableHead rowSpan={2} className="border-r text-center align-middle">เลขที่เอกสาร</TableHead>
+                  <TableHead rowSpan={2} className="border-r text-center align-middle">ราคาต่อหน่วย<br/>บาท</TableHead>
+                  <TableHead colSpan={3} className="border-r text-center border-b">จำนวน</TableHead>
+                  <TableHead rowSpan={2} className="border-r text-center align-middle">ราคารวม</TableHead>
+                  <TableHead rowSpan={2} className="text-center align-middle">หมายเหตุ</TableHead>
+                </TableRow>
+                <TableRow className="bg-muted/50">
+                  <TableHead className="border-r text-center">รับ</TableHead>
+                  <TableHead className="border-r text-center">จ่าย</TableHead>
+                  <TableHead className="border-r text-center">คงเหลือ</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
+                {/* Opening balance row */}
+                <TableRow className="bg-muted/20">
+                  <TableCell className="border-r text-center"></TableCell>
+                  <TableCell className="border-r font-medium">
+                    ยอดยกมา{openingMonth ? `เดือน${openingMonth}` : ""}
+                  </TableCell>
+                  <TableCell className="border-r"></TableCell>
+                  <TableCell className="border-r text-right">{price > 0 ? price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "-"}</TableCell>
+                  <TableCell className="border-r text-center">-</TableCell>
+                  <TableCell className="border-r text-center">-</TableCell>
+                  <TableCell className="border-r text-center font-medium">{openingBalance.toLocaleString()}</TableCell>
+                  <TableCell className="border-r text-right font-medium">{(openingBalance * price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                  <TableCell></TableCell>
+                </TableRow>
                 {rows.length === 0 ? (
-                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">ไม่มีรายการ</TableCell></TableRow>
-                ) : rows.map((r, i) => (
-                  <TableRow key={i}>
-                    <TableCell>{r.date}</TableCell>
-                    <TableCell>{r.type === "in" ? `รับจาก ${getCompanyName((r as any).company_id)}` : `เบิกไป ${getDepartmentName((r as any).department_id)}`}</TableCell>
-                    <TableCell className="text-right text-success">{r.type === "in" ? `+${r.qty.toLocaleString()}` : ""}</TableCell>
-                    <TableCell className="text-right text-destructive">{r.type === "out" ? `-${r.qty.toLocaleString()}` : ""}</TableCell>
-                    <TableCell className="text-right font-medium">{r.balance.toLocaleString()}</TableCell>
-                  </TableRow>
-                ))}
+                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-4">ไม่มีรายการเคลื่อนไหว</TableCell></TableRow>
+                ) : rows.map((r, i) => {
+                  const docNo = r.type === "in" ? (r as any).invoice_no : (r as any).requisition_no;
+                  const party = r.type === "in" ? getCompanyName((r as any).company_id) : getDepartmentName((r as any).department_id);
+                  return (
+                    <TableRow key={i}>
+                      <TableCell className="border-r text-center">{formatThaiDate(r.date)}</TableCell>
+                      <TableCell className="border-r">{party}</TableCell>
+                      <TableCell className="border-r text-center">{docNo}</TableCell>
+                      <TableCell className="border-r text-right">{price > 0 ? price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "-"}</TableCell>
+                      <TableCell className="border-r text-center">{r.type === "in" ? r.qty.toLocaleString() : "-"}</TableCell>
+                      <TableCell className="border-r text-center">{r.type === "out" ? r.qty.toLocaleString() : "-"}</TableCell>
+                      <TableCell className="border-r text-center font-medium">{r.balance.toLocaleString()}</TableCell>
+                      <TableCell className="border-r text-right">{r.totalPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                      <TableCell></TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

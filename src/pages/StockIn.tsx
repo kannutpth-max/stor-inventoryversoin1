@@ -78,6 +78,15 @@ export default function StockIn() {
           quantity: item.quantity.toString(),
           created_at: new Date().toISOString(),
         });
+        // อัพเดทสต็อกสินค้า
+        const product = products.find(p => p.id === item.productId);
+        if (product) {
+          const currentStock = parseInt(product.stock) || 0;
+          await updateProduct.mutateAsync({
+            id: product.id,
+            data: { ...product, stock: (currentStock + item.quantity).toString() },
+          });
+        }
       }
       toast({ title: "บันทึกรายการรับเข้าสำเร็จ" });
       setInvoiceNo(""); setCompanyId(""); setItems([]);

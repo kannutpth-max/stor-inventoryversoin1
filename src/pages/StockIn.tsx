@@ -19,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useSheetData, useSheetCreate, useSheetUpdate } from "@/hooks/useGoogleSheets";
 
 interface Company { id: string; name: string; }
-interface Product { id: string; name: string; unit_id: string; stock: string; }
+interface Product { id: string; name: string; unit_id: string; stock: string; price: string; }
 interface Unit { id: string; name: string; }
 
 interface StockInItem {

@@ -19,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useSheetData, useSheetCreate, useSheetUpdate } from "@/hooks/useGoogleSheets";
 
 interface Company { id: string; name: string; }
-interface Product { id: string; name: string; unit_id: string; stock: string; }
+interface Product { id: string; name: string; unit_id: string; stock: string; price: string; }
 interface Unit { id: string; name: string; }
 
 interface StockInItem {
@@ -166,7 +166,11 @@ export default function StockIn() {
             <h3 className="font-medium mb-4">เพิ่มรายการสินค้า</h3>
             <div className="grid gap-4 md:grid-cols-5">
               <div className="md:col-span-2">
-                <Select value={selectedProduct} onValueChange={setSelectedProduct}>
+                <Select value={selectedProduct} onValueChange={(val) => {
+                  setSelectedProduct(val);
+                  const p = products.find(prod => prod.id === val);
+                  if (p && p.price) setPrice(p.price);
+                }}>
                   <SelectTrigger><SelectValue placeholder="เลือกสินค้า" /></SelectTrigger>
                   <SelectContent>
                     {products.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}

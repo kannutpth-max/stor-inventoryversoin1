@@ -32,6 +32,7 @@ export default function StockIn() {
   const { data: products = [] } = useSheetData<Product>("products");
   const { data: units = [] } = useSheetData<Unit>("units");
   const createMutation = useSheetCreate("stock_in");
+  const updateProduct = useSheetUpdate("products");
 
   const [date, setDate] = useState<Date>(new Date());
   const [invoiceNo, setInvoiceNo] = useState("");

@@ -68,6 +68,7 @@ export default function StockIn() {
       return;
     }
     try {
+      // สร้างรายการรับเข้าทั้งหมดก่อน
       for (const item of items) {
         await createMutation.mutateAsync({
           id: `SI-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
@@ -78,14 +79,35 @@ export default function StockIn() {
           quantity: item.quantity.toString(),
           created_at: new Date().toISOString(),
         });
-        // อัพเดทสต็อกสินค้า
-        const product = products.find(p => p.id === item.productId);
+      }
+
+      // รวมจำนวนสต็อกที่ต้องเพิ่มต่อสินค้า
+      const stockChanges = new Map<string, number>();
+      for (const item of items) {
+        const prev = stockChanges.get(item.productId) || 0;
+        stockChanges.set(item.productId, prev + item.quantity);
+      }
+
+      // อัพเดทสต็อกสินค้าทีละรายการ พร้อมหน่วงเวลาเล็กน้อย
+      for (const [productId, addQty] of stockChanges) {
+        const product = products.find(p => p.id === productId);
         if (product) {
           const currentStock = parseInt(product.stock) || 0;
-          await updateProduct.mutateAsync({
-            id: product.id,
-            data: { ...product, stock: (currentStock + item.quantity).toString() },
-          });
+          try {
+            await updateProduct.mutateAsync({
+              id: product.id,
+              data: { ...product, stock: (currentStock + addQty).toString() },
+            });
+          } catch (e) {
+            console.warn(`Failed to update stock for ${productId}, retrying...`);
+            await new Promise(r => setTimeout(r, 1000));
+            await updateProduct.mutateAsync({
+              id: product.id,
+              data: { ...product, stock: (currentStock + addQty).toString() },
+            });
+          }
+          // หน่วงเวลาระหว่างการอัพเดทแต่ละสินค้า
+          await new Promise(r => setTimeout(r, 500));
         }
       }
       toast({ title: "บันทึกรายการรับเข้าสำเร็จ" });

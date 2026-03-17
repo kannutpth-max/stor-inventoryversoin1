@@ -428,7 +428,11 @@ export default function StockOut() {
               <p className="pl-4">- เพื่อเห็นชอบให้เบิกวัสดุเพื่อใช้ในงานราชการ ใน</p>
               <p>หน่วยงาน.................................................................</p>
               <div className="mt-3 space-y-1">
-                <p>ลงชื่อ..........................................ผู้เขียนคำขอ</p>
+                <div className="flex items-end gap-1">
+                  <span>ลงชื่อ</span>
+                  <SignaturePad label="ผู้เขียนคำขอ / ผู้รับวัสดุ" width={200} height={60} />
+                  <span>ผู้เขียนคำขอ</span>
+                </div>
                 <p>(..........................................) และ(ผู้รับวัสดุ)</p>
               </div>
               <div className="flex gap-4 mt-2">
@@ -438,10 +442,17 @@ export default function StockOut() {
                 <label className="flex items-center gap-1"><span className="inline-block w-4 h-4 border border-current print:border-black"></span> ส่งคืนแก้ไขคำขอ</label>
               </div>
               <div className="mt-3 space-y-1">
-                <p>(ลงชื่อ)...........................................................(ผู้เบิก)</p>
+                <div className="flex items-end gap-1">
+                  <span>(ลงชื่อ)</span>
+                  <SignaturePad label="ผู้เบิก" width={200} height={60} />
+                  <span>(ผู้เบิก)</span>
+                </div>
                 <p>(..................................................................)</p>
                 <p>ตำแหน่ง.............................................................</p>
-                <p>หัวหน้ากลุ่มงาน / หน่วยงาน.................................</p>
+                <div className="flex items-end gap-1">
+                  <span>หัวหน้ากลุ่มงาน / หน่วยงาน</span>
+                  <SignaturePad label="หัวหน้ากลุ่มงาน" width={200} height={60} />
+                </div>
                 <p>วันที่............./................./.................</p>
               </div>
             </div>
@@ -450,7 +461,11 @@ export default function StockOut() {
               <p className="font-bold">เรียน หัวหน้าหน่วยพัสดุ</p>
               <p className="pl-4">- เพื่ออนุมัติเบิกจ่ายวัสดุตามคำขอข้างต้น</p>
               <div className="mt-3 space-y-1">
-                <p>(ลงชื่อ)........................................(ผู้จ่ายและลงทะเบียน)</p>
+                <div className="flex items-end gap-1">
+                  <span>(ลงชื่อ)</span>
+                  <SignaturePad label="ผู้จ่าย" width={200} height={60} />
+                  <span>(ผู้จ่ายและลงทะเบียน)</span>
+                </div>
                 <p>( ..........................................)</p>
                 <p>ตำแหน่ง ........................................</p>
                 <p>วันที่............./................./.................</p>
@@ -460,25 +475,20 @@ export default function StockOut() {
                 <p>- รับทราบการเบิกจ่าย</p>
               </div>
               <div className="mt-3 space-y-1">
-                <p>(ลงชื่อ)........................................(ผู้อนุมัติเบิกจ่าย)</p>
+                <div className="flex items-end gap-1">
+                  <span>(ลงชื่อ)</span>
+                  <SignaturePad label="ผู้อนุมัติ" width={200} height={60} />
+                  <span>(ผู้อนุมัติเบิกจ่าย)</span>
+                </div>
                 <p>( ..........................................) <span className="font-bold">หัวหน้าหน่วยพัสดุ</span></p>
+                <div className="flex items-end gap-1">
+                  <span>หัวหน้าหน่วยพัสดุ</span>
+                  <SignaturePad label="หัวหน้าหน่วยพัสดุ" width={200} height={60} />
+                </div>
                 <p>ตำแหน่ง ........................................</p>
                 <p>วันที่............./................./.................</p>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Digital Signature Section */}
-        <div className="mt-6 print:hidden">
-          <h3 className="text-sm font-semibold mb-3">ลายเซ็นดิจิตอล</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <SignaturePad label="ผู้เขียนคำขอ / ผู้รับวัสดุ" />
-            <SignaturePad label="หัวหน้ากลุ่มงาน / หน่วยงาน" />
-            <SignaturePad label="ผู้จ่ายและลงทะเบียน" />
-            <SignaturePad label="ผู้เบิก" />
-            <SignaturePad label="ผู้อนุมัติเบิกจ่าย" />
-            <SignaturePad label="หัวหน้าหน่วยพัสดุ" />
           </div>
         </div>
       </div>

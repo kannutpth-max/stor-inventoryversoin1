@@ -16,7 +16,7 @@ import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { useSheetData, useSheetCreate } from "@/hooks/useGoogleSheets";
+import { useSheetData, useSheetCreate, useSheetUpdate } from "@/hooks/useGoogleSheets";
 
 interface Company { id: string; name: string; }
 interface Product { id: string; name: string; unit_id: string; stock: string; }
@@ -32,6 +32,7 @@ export default function StockIn() {
   const { data: products = [] } = useSheetData<Product>("products");
   const { data: units = [] } = useSheetData<Unit>("units");
   const createMutation = useSheetCreate("stock_in");
+  const updateProduct = useSheetUpdate("products");
 
   const [date, setDate] = useState<Date>(new Date());
   const [invoiceNo, setInvoiceNo] = useState("");
@@ -77,6 +78,15 @@ export default function StockIn() {
           quantity: item.quantity.toString(),
           created_at: new Date().toISOString(),
         });
+        // อัพเดทสต็อกสินค้า
+        const product = products.find(p => p.id === item.productId);
+        if (product) {
+          const currentStock = parseInt(product.stock) || 0;
+          await updateProduct.mutateAsync({
+            id: product.id,
+            data: { ...product, stock: (currentStock + item.quantity).toString() },
+          });
+        }
       }
       toast({ title: "บันทึกรายการรับเข้าสำเร็จ" });
       setInvoiceNo(""); setCompanyId(""); setItems([]);

@@ -8,8 +8,21 @@ interface ExportData {
   rows: (string | number)[][];
 }
 
+export interface StockCardExportParams {
+  products: any[];
+  stockIn: any[];
+  stockOut: any[];
+  helpers: {
+    getProductName: (id: string) => string;
+    getProductUnit: (id: string) => string;
+    getCategoryName: (id: string) => string;
+    getCompanyName: (id: string) => string;
+    getDepartmentName: (id: string) => string;
+  };
+  dateFrom?: Date;
+}
+
 async function saveFile(blob: Blob, defaultName: string) {
-  // Use File System Access API to let user pick save location
   if ("showSaveFilePicker" in window) {
     try {
       const ext = defaultName.split(".").pop() || "";
@@ -28,10 +41,9 @@ async function saveFile(blob: Blob, defaultName: string) {
       await writable.close();
       return true;
     } catch (e: any) {
-      if (e.name === "AbortError") return false; // user cancelled
+      if (e.name === "AbortError") return false;
     }
   }
-  // Fallback: standard download
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -41,6 +53,30 @@ async function saveFile(blob: Blob, defaultName: string) {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
   return true;
+}
+
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+async function loadThaiFont(doc: jsPDF): Promise<boolean> {
+  try {
+    const res = await fetch("https://fonts.gstatic.com/s/sarabun/v15/DtVjJx26TKEr37c9YL5rik4s.ttf");
+    if (!res.ok) return false;
+    const buffer = await res.arrayBuffer();
+    const base64 = arrayBufferToBase64(buffer);
+    doc.addFileToVFS("Sarabun-Regular.ttf", base64);
+    doc.addFont("Sarabun-Regular.ttf", "Sarabun", "normal");
+    doc.setFont("Sarabun");
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function exportToExcel(data: ExportData): Promise<boolean> {
@@ -56,7 +92,7 @@ export async function exportToExcel(data: ExportData): Promise<boolean> {
 export async function exportToPDF(data: ExportData): Promise<boolean> {
   const doc = new jsPDF({ orientation: data.headers.length > 6 ? "landscape" : "portrait" });
 
-  // Use default font (Helvetica) — Thai text may not render perfectly but avoids font issues
+  const hasThai = await loadThaiFont(doc);
   doc.setFontSize(16);
   doc.text(data.title, 14, 20);
 
@@ -64,12 +100,205 @@ export async function exportToPDF(data: ExportData): Promise<boolean> {
     head: [data.headers],
     body: data.rows.map(r => r.map(c => String(c))),
     startY: 30,
-    styles: { fontSize: 9 },
+    styles: { fontSize: 9, ...(hasThai ? { font: "Sarabun" } : {}) },
     headStyles: { fillColor: [59, 130, 246] },
   });
 
   const blob = doc.output("blob");
   return saveFile(blob, `${data.title}.pdf`);
+}
+
+// ======================== Stock Card Specific Exports ========================
+
+function buildStockCardProductData(params: StockCardExportParams) {
+  const { products, stockIn, stockOut, helpers, dateFrom } = params;
+
+  return products.map((product, pIdx) => {
+    const pIn = stockIn.filter((r: any) => r.product_id === product.id);
+    const pOut = stockOut.filter((r: any) => r.product_id === product.id);
+    const movements = [
+      ...pIn.map((r: any) => ({ ...r, type: "in" })),
+      ...pOut.map((r: any) => ({ ...r, type: "out" })),
+    ].sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+
+    const price = parseFloat(product.price) || 0;
+    const unitName = helpers.getProductUnit(product.id);
+    const categoryName = helpers.getCategoryName(product.category_id);
+
+    let openingBalance = parseInt(product.stock) || 0;
+    const totalIn = pIn.reduce((s: number, r: any) => s + (parseInt(r.quantity) || 0), 0);
+    const totalOut = pOut.reduce((s: number, r: any) => s + (parseInt(r.quantity) || 0), 0);
+    openingBalance = openingBalance - totalIn + totalOut;
+
+    const openingMonth = dateFrom ? dateFrom.toLocaleDateString("th-TH", { month: "long", year: "numeric" }) : "";
+
+    let balance = openingBalance;
+    const rows = movements.map((m: any) => {
+      const qty = parseInt(m.quantity) || 0;
+      if (m.type === "in") balance += qty; else balance -= qty;
+      const ref = m.type === "in" ? m.invoice_no : m.requisition_no;
+      const party = m.type === "in" ? helpers.getCompanyName(m.company_id) : helpers.getDepartmentName(m.department_id);
+      return {
+        date: m.date,
+        party,
+        ref,
+        price,
+        inQty: m.type === "in" ? qty : null,
+        outQty: m.type === "out" ? qty : null,
+        balance,
+        totalPrice: balance * price,
+      };
+    });
+
+    return {
+      sheetNo: String(pIdx + 1).padStart(3, "0"),
+      productId: product.id,
+      productName: product.name,
+      categoryName,
+      unitName,
+      minStock: product.min_stock || "-",
+      price,
+      openingBalance,
+      openingMonth,
+      rows,
+    };
+  });
+}
+
+export async function exportStockCardToExcel(params: StockCardExportParams): Promise<boolean> {
+  const wb = XLSX.utils.book_new();
+  const productsData = buildStockCardProductData(params);
+
+  productsData.forEach(pd => {
+    const wsData: any[][] = [];
+    wsData.push(["", "", "", "บัญชีวัสดุ", "", "", "", "", ""]);
+    wsData.push([]);
+    wsData.push(["แผ่นที่", `: ${pd.sheetNo}`, "", "", "ส่วนราชการ", ": -"]);
+    wsData.push(["ประเภท", `: ${pd.categoryName}`, "", "", "กลุ่มงาน", ": -"]);
+    wsData.push(["ชื่อหรือชนิดวัสดุ", `: ${pd.productName}`, "", "", "หน่วยงาน", ": -"]);
+    wsData.push(["ขนาดหรือลักษณะ", ": -", "", "", "รหัส", `: ${pd.productId}`]);
+    wsData.push(["หน่วยนับ", `: ${pd.unitName}`, "", "", "จำนวนอย่างสูง", ": -"]);
+    wsData.push(["", "", "", "", "จำนวนอย่างต่ำ", `: ${pd.minStock}`]);
+    wsData.push([]);
+    // Table header
+    wsData.push(["วัน เดือน ปี", "รับจาก/จ่ายให้", "เลขที่เอกสาร", "ราคาต่อหน่วย (บาท)", "รับ", "จ่าย", "คงเหลือ", "ราคารวม", "หมายเหตุ"]);
+    // Opening balance
+    wsData.push([
+      "", `ยอดยกมา${pd.openingMonth ? `เดือน${pd.openingMonth}` : ""}`, "",
+      pd.price || "", "-", "-", pd.openingBalance,
+      pd.openingBalance * pd.price, ""
+    ]);
+    // Movement rows
+    pd.rows.forEach(r => {
+      wsData.push([
+        r.date, r.party, r.ref, r.price,
+        r.inQty !== null ? r.inQty : "-",
+        r.outQty !== null ? r.outQty : "-",
+        r.balance, r.totalPrice, ""
+      ]);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    ws['!cols'] = [
+      { wch: 14 }, { wch: 28 }, { wch: 16 }, { wch: 18 },
+      { wch: 8 }, { wch: 8 }, { wch: 10 }, { wch: 14 }, { wch: 12 }
+    ];
+    const sheetName = `${pd.productId}-${pd.productName}`.substring(0, 31);
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  });
+
+  if (wb.SheetNames.length === 0) {
+    const ws = XLSX.utils.aoa_to_sheet([["ไม่พบข้อมูล"]]);
+    XLSX.utils.book_append_sheet(wb, ws, "รายงาน");
+  }
+
+  const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+  const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  return saveFile(blob, "รายงานสต็อกการ์ด.xlsx");
+}
+
+export async function exportStockCardToPDF(params: StockCardExportParams): Promise<boolean> {
+  const doc = new jsPDF({ orientation: "landscape" });
+  const hasThai = await loadThaiFont(doc);
+  const fontOpt = hasThai ? { font: "Sarabun" } : {};
+
+  const productsData = buildStockCardProductData(params);
+
+  productsData.forEach((pd, idx) => {
+    if (idx > 0) doc.addPage();
+
+    doc.setFontSize(16);
+    doc.text("บัญชีวัสดุ", doc.internal.pageSize.getWidth() / 2, 15, { align: "center" });
+
+    doc.setFontSize(10);
+    const lx = 14;
+    const rx = 160;
+    let y = 25;
+    doc.text(`แผ่นที่ : ${pd.sheetNo}`, lx, y);
+    doc.text(`ส่วนราชการ : -`, rx, y);
+    y += 6;
+    doc.text(`ประเภท : ${pd.categoryName}`, lx, y);
+    doc.text(`กลุ่มงาน : -`, rx, y);
+    y += 6;
+    doc.text(`ชื่อหรือชนิดวัสดุ : ${pd.productName}`, lx, y);
+    doc.text(`หน่วยงาน : -`, rx, y);
+    y += 6;
+    doc.text(`ขนาดหรือลักษณะ : -`, lx, y);
+    doc.text(`รหัส : ${pd.productId}`, rx, y);
+    y += 6;
+    doc.text(`หน่วยนับ : ${pd.unitName}`, lx, y);
+    doc.text(`จำนวนอย่างสูง : -`, rx, y);
+    y += 6;
+    doc.text(`จำนวนอย่างต่ำ : ${pd.minStock}`, rx, y);
+    y += 4;
+
+    const tableBody: string[][] = [];
+    // Opening balance row
+    tableBody.push([
+      "", `ยอดยกมา${pd.openingMonth ? `เดือน${pd.openingMonth}` : ""}`, "",
+      pd.price ? pd.price.toLocaleString() : "", "-", "-",
+      pd.openingBalance.toLocaleString(),
+      (pd.openingBalance * pd.price).toLocaleString(), ""
+    ]);
+    // Movement rows
+    pd.rows.forEach(r => {
+      tableBody.push([
+        r.date, r.party, r.ref,
+        r.price ? r.price.toLocaleString() : "",
+        r.inQty !== null ? r.inQty.toLocaleString() : "-",
+        r.outQty !== null ? r.outQty.toLocaleString() : "-",
+        r.balance.toLocaleString(),
+        r.totalPrice.toLocaleString(), ""
+      ]);
+    });
+
+    autoTable(doc, {
+      head: [["วัน เดือน ปี", "รับจาก/จ่ายให้", "เลขที่เอกสาร", "ราคาต่อหน่วย\nบาท", "รับ", "จ่าย", "คงเหลือ", "ราคารวม", "หมายเหตุ"]],
+      body: tableBody,
+      startY: y,
+      styles: { fontSize: 9, ...fontOpt },
+      headStyles: { fillColor: [59, 130, 246], halign: "center" },
+      columnStyles: {
+        0: { cellWidth: 25 },
+        1: { cellWidth: 45 },
+        2: { cellWidth: 25 },
+        3: { cellWidth: 25, halign: "right" },
+        4: { cellWidth: 18, halign: "center" },
+        5: { cellWidth: 18, halign: "center" },
+        6: { cellWidth: 22, halign: "right" },
+        7: { cellWidth: 28, halign: "right" },
+        8: { cellWidth: 25 },
+      },
+    });
+  });
+
+  if (productsData.length === 0) {
+    doc.setFontSize(14);
+    doc.text("ไม่พบข้อมูล", 14, 20);
+  }
+
+  const blob = doc.output("blob");
+  return saveFile(blob, "รายงานสต็อกการ์ด.pdf");
 }
 
 // Build ExportData from the current report context

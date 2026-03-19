@@ -9,7 +9,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { th } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -68,7 +68,7 @@ export default function Reports() {
     const filterDate = (dateStr: string) => {
       if (!dateStr) return true;
       try {
-        const d = new Date(dateStr);
+        const d = parseISO(dateStr);
         if (dateFrom && d < dateFrom) return false;
         if (dateTo && d > dateTo) return false;
         return true;

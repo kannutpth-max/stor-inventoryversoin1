@@ -66,7 +66,7 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
 
 async function loadThaiFont(doc: jsPDF): Promise<boolean> {
   try {
-    const res = await fetch("https://fonts.gstatic.com/s/sarabun/v15/DtVjJx26TKEr37c9YL5rik4s.ttf");
+    const res = await fetch("https://raw.githubusercontent.com/google/fonts/main/ofl/sarabun/Sarabun-Regular.ttf");
     if (!res.ok) return false;
     const buffer = await res.arrayBuffer();
     const base64 = arrayBufferToBase64(buffer);

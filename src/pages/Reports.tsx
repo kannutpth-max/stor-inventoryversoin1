@@ -100,11 +100,22 @@ export default function Reports() {
       return;
     }
     const filtered = getFilteredData();
-    const data = buildReportData(selectedReport, filtered.products, filtered.stockIn, filtered.stockOut, {
-      getProductName, getProductUnit, getCategoryName, getCompanyName, getDepartmentName,
-    });
+    const helperFns = { getProductName, getProductUnit, getCategoryName, getCompanyName, getDepartmentName };
     try {
-      const saved = type === "excel" ? await exportToExcel(data) : await exportToPDF(data);
+      let saved: boolean;
+      if (selectedReport === "stock-card") {
+        const stockCardParams = {
+          products: filtered.products,
+          stockIn: filtered.stockIn,
+          stockOut: filtered.stockOut,
+          helpers: helperFns,
+          dateFrom,
+        };
+        saved = type === "excel" ? await exportStockCardToExcel(stockCardParams) : await exportStockCardToPDF(stockCardParams);
+      } else {
+        const data = buildReportData(selectedReport, filtered.products, filtered.stockIn, filtered.stockOut, helperFns);
+        saved = type === "excel" ? await exportToExcel(data) : await exportToPDF(data);
+      }
       if (saved) toast({ title: `ส่งออก${type === "excel" ? " Excel" : " PDF"} สำเร็จ` });
     } catch {
       toast({ variant: "destructive", title: "เกิดข้อผิดพลาดในการส่งออก" });

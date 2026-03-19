@@ -68,7 +68,7 @@ export default function Reports() {
     const filterDate = (dateStr: string) => {
       if (!dateStr) return true;
       try {
-        const d = new Date(dateStr);
+        const d = parseISO(dateStr);
         if (dateFrom && d < dateFrom) return false;
         if (dateTo && d > dateTo) return false;
         return true;

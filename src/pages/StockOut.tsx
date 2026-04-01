@@ -494,7 +494,7 @@ export default function StockOut() {
                 <p>- อนุมัติ</p>
                 <p>- รับทราบการเบิกจ่าย</p>
               </div>
-              <div className="mt-3 space-y-1">
+              <div className="mt-2 space-y-1">
                 <div className="flex items-end gap-1">
                   <span>(ลงชื่อ)</span>
                   <SignaturePad label="ผู้อนุมัติ" width={200} height={60} />

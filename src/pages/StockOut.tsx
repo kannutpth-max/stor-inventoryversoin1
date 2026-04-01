@@ -309,7 +309,7 @@ export default function StockOut() {
           </Select>
         </div>
 
-        <p className="text-sm mb-3">มีความประสงค์ขอเบิกวัสดุที่ใช้ในราชการเพื่อจ่ายรายการดังต่อไปนี้</p>
+        <p className="text-sm print:text-[9px] mb-3 print:mb-1">มีความประสงค์ขอเบิกวัสดุที่ใช้ในราชการเพื่อจ่ายรายการดังต่อไปนี้</p>
 
         {/* Add item section - only in create mode */}
         {!isEditMode && (

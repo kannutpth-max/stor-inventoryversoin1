@@ -480,7 +480,7 @@ export default function StockOut() {
             <div className="space-y-1">
               <p className="font-bold">เรียน หัวหน้าหน่วยพัสดุ</p>
               <p className="pl-4">- เพื่ออนุมัติเบิกจ่ายวัสดุตามคำขอข้างต้น</p>
-              <div className="mt-3 space-y-1">
+              <div className="mt-2 space-y-1">
                 <div className="flex items-end gap-1">
                   <span>(ลงชื่อ)</span>
                   <SignaturePad label="ผู้จ่าย" width={200} height={60} />

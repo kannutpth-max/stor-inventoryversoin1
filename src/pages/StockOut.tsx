@@ -459,72 +459,96 @@ export default function StockOut() {
         </div>
 
         {/* Signature Section */}
-        <div className="mt-4 print:mt-0 text-xs print:text-[8px] sig-section">
-          <div className="grid grid-cols-2 gap-6 print:gap-1">
-            {/* Left Column */}
-            <div className="space-y-1">
-              <p className="font-bold">เรียน หัวหน้ากลุ่มงาน / หน่วยงาน</p>
-              <p className="pl-4">- เพื่อเห็นชอบให้เบิกวัสดุเพื่อใช้ในงานราชการ ใน</p>
-              <p>หน่วยงาน.................................................................</p>
-              <div className="mt-2 space-y-1">
+        <div className="mt-4 print:mt-1 text-xs sig-section">
+          <div className="grid grid-cols-2 gap-8 print:gap-4">
+            {/* Left Column - ผู้เบิก */}
+            <div>
+              <p className="font-bold mb-1">เรียน หัวหน้ากลุ่มงาน / หน่วยงาน</p>
+              <p className="pl-6">- เพื่อเห็นชอบให้เบิกวัสดุเพื่อใช้ในงานราชการ</p>
+              <p>หน่วยงาน..................................................................</p>
+
+              <div className="sig-block mt-3 print:mt-1">
+                <p className="font-bold mb-1">ผู้เขียนคำขอ / ผู้รับวัสดุ</p>
                 <div className="flex items-end gap-1">
                   <span>ลงชื่อ</span>
-                  <SignaturePad label="ผู้เขียนคำขอ / ผู้รับวัสดุ" width={200} height={60} />
+                  <SignaturePad label="ผู้เขียนคำขอ" width={180} height={50} />
                   <span>ผู้เขียนคำขอ</span>
                 </div>
-                <p>(..........................................) และ(ผู้รับวัสดุ)</p>
+                <p className="text-center">(.......................................................) และ(ผู้รับวัสดุ)</p>
               </div>
-              <div className="flex gap-4 mt-2">
-                <label className="flex items-center gap-1"><span className="inline-block w-4 h-4 border border-current print:border-black"></span> เห็นชอบ</label>
+
+              <div className="flex gap-6 mt-2 print:mt-1">
+                <label className="flex items-center gap-1 checkbox-item">
+                  <span className="inline-block w-4 h-4 border border-current print:border-black checkbox-box"></span> เห็นชอบ
+                </label>
+                <label className="flex items-center gap-1 checkbox-item">
+                  <span className="inline-block w-4 h-4 border border-current print:border-black checkbox-box"></span> ส่งคืนแก้ไขคำขอ
+                </label>
               </div>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-1"><span className="inline-block w-4 h-4 border border-current print:border-black"></span> ส่งคืนแก้ไขคำขอ</label>
-              </div>
-              <div className="mt-2 space-y-1">
+
+              <div className="sig-block mt-3 print:mt-1">
+                <p className="text-center font-bold mb-1">ผู้เบิก</p>
                 <div className="flex items-end gap-1">
-                  <span>(ลงชื่อ)</span>
-                  <SignaturePad label="ผู้เบิก" width={200} height={60} />
+                  <span>ลงชื่อ</span>
+                  <SignaturePad label="ผู้เบิก" width={180} height={50} />
                   <span>(ผู้เบิก)</span>
                 </div>
-                <p>(..................................................................)</p>
-                <p>ตำแหน่ง.............................................................</p>
+                <p className="text-center">(..........................................................)</p>
+                <p>ตำแหน่ง.................................................................</p>
+              </div>
+
+              <div className="sig-block mt-2 print:mt-1">
+                <p className="text-center font-bold mb-1">หัวหน้ากลุ่มงาน</p>
                 <div className="flex items-end gap-1">
-                  <span>หัวหน้ากลุ่มงาน / หน่วยงาน</span>
-                  <SignaturePad label="หัวหน้ากลุ่มงาน" width={200} height={60} />
+                  <span>ลงชื่อ</span>
+                  <SignaturePad label="หัวหน้ากลุ่มงาน" width={180} height={50} />
                 </div>
+                <p className="text-center">(..........................................................)</p>
+                <p>ตำแหน่ง.................................................................</p>
                 <p>วันที่............./................./.................</p>
               </div>
             </div>
-            {/* Right Column */}
-            <div className="space-y-1">
-              <p className="font-bold">เรียน หัวหน้าหน่วยพัสดุ</p>
-              <p className="pl-4">- เพื่ออนุมัติเบิกจ่ายวัสดุตามคำขอข้างต้น</p>
-              <div className="mt-2 space-y-1">
+
+            {/* Right Column - ผู้จ่าย/อนุมัติ */}
+            <div>
+              <p className="font-bold mb-1">เรียน หัวหน้าหน่วยพัสดุ</p>
+              <p className="pl-6">- เพื่ออนุมัติเบิกจ่ายวัสดุตามคำขอข้างต้น</p>
+
+              <div className="sig-block mt-3 print:mt-1">
+                <p className="text-center font-bold mb-1">ผู้จ่าย</p>
                 <div className="flex items-end gap-1">
-                  <span>(ลงชื่อ)</span>
-                  <SignaturePad label="ผู้จ่าย" width={200} height={60} />
+                  <span>ลงชื่อ</span>
+                  <SignaturePad label="ผู้จ่าย" width={180} height={50} />
                   <span>(ผู้จ่ายและลงทะเบียน)</span>
                 </div>
-                <p>( ..........................................)</p>
-                <p>ตำแหน่ง ........................................</p>
+                <p className="text-center">(..........................................................)</p>
+                <p>ตำแหน่ง.................................................................</p>
                 <p>วันที่............./................./.................</p>
               </div>
-              <div className="mt-2 space-y-1">
-                <p>- อนุมัติ</p>
-                <p>- รับทราบการเบิกจ่าย</p>
+
+              <div className="mt-2 print:mt-1">
+                <p className="pl-6">- อนุมัติ</p>
+                <p className="pl-6">- รับทราบการเบิกจ่าย</p>
               </div>
-              <div className="mt-2 space-y-1">
+
+              <div className="sig-block mt-3 print:mt-1">
+                <p className="text-center font-bold mb-1">ผู้อนุมัติ</p>
                 <div className="flex items-end gap-1">
-                  <span>(ลงชื่อ)</span>
-                  <SignaturePad label="ผู้อนุมัติ" width={200} height={60} />
+                  <span>ลงชื่อ</span>
+                  <SignaturePad label="ผู้อนุมัติ" width={180} height={50} />
                   <span>(ผู้อนุมัติเบิกจ่าย)</span>
                 </div>
-                <p>( ..........................................) <span className="font-bold">หัวหน้าหน่วยพัสดุ</span></p>
+                <p className="text-center">(..........................................................)</p>
+              </div>
+
+              <div className="sig-block mt-2 print:mt-1">
+                <p className="text-center font-bold mb-1">หัวหน้าหน่วยพัสดุ</p>
                 <div className="flex items-end gap-1">
-                  <span>หัวหน้าหน่วยพัสดุ</span>
-                  <SignaturePad label="หัวหน้าหน่วยพัสดุ" width={200} height={60} />
+                  <span>ลงชื่อ</span>
+                  <SignaturePad label="หัวหน้าหน่วยพัสดุ" width={180} height={50} />
                 </div>
-                <p>ตำแหน่ง ........................................</p>
+                <p className="text-center">(..........................................................)</p>
+                <p>ตำแหน่ง.................................................................</p>
                 <p>วันที่............./................./.................</p>
               </div>
             </div>

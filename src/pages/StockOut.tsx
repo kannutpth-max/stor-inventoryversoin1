@@ -223,31 +223,42 @@ export default function StockOut() {
       </div>
 
       {/* Printable Form */}
-      <div className="border border-border rounded-lg p-6 bg-background print:border-none print:rounded-none print:p-2 print:text-black print:text-[11px]" id="requisition-form">
+      <div className="border border-border rounded-lg p-6 bg-background print:border-none print:rounded-none print:p-0 print:text-black print:text-[9px]" id="requisition-form">
         <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
           @media print {
-            @page { size: A4; margin: 8mm; }
+            @page { size: A4; margin: 5mm 8mm; }
             body * { visibility: hidden; }
             #requisition-form, #requisition-form * { visibility: visible; }
-            #requisition-form { position: absolute; left: 0; top: 0; width: 100%; font-size: 11px; }
+            #requisition-form {
+              position: absolute; left: 0; top: 0; width: 100%;
+              font-family: 'Sarabun', 'TH Sarabun New', sans-serif !important;
+              font-size: 9px;
+              line-height: 1.15;
+            }
+            #requisition-form * { font-family: 'Sarabun', 'TH Sarabun New', sans-serif !important; }
             .print\\:hidden { display: none !important; }
             #requisition-form table td, #requisition-form table th {
-              padding: 1px 4px !important;
-              font-size: 11px !important;
-              line-height: 1.2 !important;
+              padding: 0px 2px !important;
+              font-size: 9px !important;
+              line-height: 1.1 !important;
             }
+            #requisition-form h1 { font-size: 13px !important; margin: 0 !important; }
+            #requisition-form .sig-section { margin-top: 2px !important; }
+            #requisition-form .sig-section p { margin: 0 !important; line-height: 1.2 !important; }
+            #requisition-form canvas { max-height: 25px !important; }
           }
         `}</style>
 
         {/* Header */}
-        <div className="relative mb-3">
-          <p className="text-sm text-muted-foreground print:text-black text-right">เลขที่รับ...............</p>
+        <div className="relative mb-1 print:mb-0">
+          <p className="text-sm text-muted-foreground print:text-black print:text-[9px] text-right">เลขที่รับ...............</p>
           <h1 className="text-lg font-bold text-center">ใบเบิกวัสดุสำนักงาน / งานบ้านงานครัว</h1>
-          <p className="text-sm text-muted-foreground print:text-black text-center">โรงพยาบาลประชาธิปัตย์ อำเภอธัญบุรี</p>
+          <p className="text-sm text-muted-foreground print:text-black print:text-[9px] text-center">โรงพยาบาลประชาธิปัตย์ อำเภอธัญบุรี</p>
         </div>
 
         {/* Form Info */}
-        <div className="grid grid-cols-2 gap-x-8 gap-y-2 mb-2 text-sm">
+        <div className="grid grid-cols-2 gap-x-8 gap-y-2 print:gap-y-0 print:gap-x-4 mb-2 print:mb-0 text-sm print:text-[9px]">
           <div className="flex items-center gap-2">
             <Label className="whitespace-nowrap font-medium">วันที่:</Label>
             <Popover>
@@ -268,14 +279,14 @@ export default function StockOut() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-x-8 gap-y-2 mb-2 text-sm">
+        <div className="grid grid-cols-2 gap-x-8 gap-y-2 print:gap-y-0 print:gap-x-4 mb-2 print:mb-0 text-sm print:text-[9px]">
           <div className="flex items-center gap-2">
             <Label className="whitespace-nowrap font-medium">เรียน:</Label>
             <span className="text-muted-foreground print:text-black">ผู้อำนวยการโรงพยาบาลจังหวัด</span>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-x-8 gap-y-2 mb-2 text-sm">
+        <div className="grid grid-cols-2 gap-x-8 gap-y-2 print:gap-y-0 print:gap-x-4 mb-2 print:mb-0 text-sm print:text-[9px]">
           <div className="flex items-center gap-2">
             <Label className="whitespace-nowrap font-medium">ข้าพเจ้า:</Label>
             <Input value={requester} onChange={(e) => setRequester(e.target.value)} placeholder="ชื่อผู้เบิก" className="h-8 text-sm print:border-0 print:border-b print:rounded-none print:border-black print:px-0" />
@@ -286,7 +297,7 @@ export default function StockOut() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 mb-4 text-sm">
+        <div className="flex items-center gap-2 mb-4 print:mb-1 text-sm print:text-[9px]">
           <Label className="whitespace-nowrap font-medium">หน่วยงานที่เบิก (ฝ่ายงาน):</Label>
           <Select value={departmentId} onValueChange={setDepartmentId} disabled={isEditMode}>
             <SelectTrigger className="h-8 text-sm flex-1 print:border-0 print:border-b print:rounded-none print:border-black">
@@ -298,7 +309,7 @@ export default function StockOut() {
           </Select>
         </div>
 
-        <p className="text-sm mb-3">มีความประสงค์ขอเบิกวัสดุที่ใช้ในราชการเพื่อจ่ายรายการดังต่อไปนี้</p>
+        <p className="text-sm print:text-[9px] mb-3 print:mb-1">มีความประสงค์ขอเบิกวัสดุที่ใช้ในราชการเพื่อจ่ายรายการดังต่อไปนี้</p>
 
         {/* Add item section - only in create mode */}
         {!isEditMode && (
@@ -353,7 +364,7 @@ export default function StockOut() {
             </TableHeader>
             <TableBody>
               {items.map((item, index) => (
-                <TableRow key={item.id} className="print:border-black h-6">
+                <TableRow key={item.id} className="print:border-black h-6 print:h-4">
                   <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">{index + 1}</TableCell>
                   <TableCell className="border border-border print:border-black py-0.5 text-xs">{item.productName}</TableCell>
                   <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">{item.unit}</TableCell>
@@ -396,7 +407,7 @@ export default function StockOut() {
               ))}
               {/* Empty rows */}
               {Array.from({ length: emptyRows }).map((_, i) => (
-                <TableRow key={`empty-${i}`} className="print:border-black h-6">
+                <TableRow key={`empty-${i}`} className="print:border-black h-6 print:h-4">
                   <TableCell className="border border-border print:border-black text-center text-muted-foreground py-0.5 text-xs">{items.length + i + 1}</TableCell>
                   <TableCell className="border border-border print:border-black py-0.5">&nbsp;</TableCell>
                   <TableCell className="border border-border print:border-black py-0.5"></TableCell>
@@ -420,8 +431,8 @@ export default function StockOut() {
         </div>
 
         {/* Signature Section */}
-        <div className="mt-4 text-xs print:text-[11px]">
-          <div className="grid grid-cols-2 gap-6">
+        <div className="mt-4 print:mt-1 text-xs print:text-[8px] sig-section">
+          <div className="grid grid-cols-2 gap-6 print:gap-2">
             {/* Left Column */}
             <div className="space-y-1">
               <p className="font-bold">เรียน หัวหน้ากลุ่มงาน / หน่วยงาน</p>

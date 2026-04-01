@@ -440,8 +440,8 @@ export default function StockOut() {
         </div>
 
         {/* Signature Section */}
-        <div className="mt-4 print:mt-1 text-xs print:text-[8px] sig-section">
-          <div className="grid grid-cols-2 gap-6 print:gap-2">
+        <div className="mt-4 print:mt-0 text-xs print:text-[8px] sig-section">
+          <div className="grid grid-cols-2 gap-6 print:gap-1">
             {/* Left Column */}
             <div className="space-y-1">
               <p className="font-bold">เรียน หัวหน้ากลุ่มงาน / หน่วยงาน</p>

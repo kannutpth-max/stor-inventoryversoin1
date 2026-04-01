@@ -297,7 +297,7 @@ export default function StockOut() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 mb-4 text-sm">
+        <div className="flex items-center gap-2 mb-4 print:mb-1 text-sm print:text-[9px]">
           <Label className="whitespace-nowrap font-medium">หน่วยงานที่เบิก (ฝ่ายงาน):</Label>
           <Select value={departmentId} onValueChange={setDepartmentId} disabled={isEditMode}>
             <SelectTrigger className="h-8 text-sm flex-1 print:border-0 print:border-b print:rounded-none print:border-black">

@@ -227,26 +227,35 @@ export default function StockOut() {
         <style>{`
           @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
           @media print {
-            @page { size: A4; margin: 5mm 8mm; }
+            @page { size: A4; margin: 4mm 8mm; }
             body * { visibility: hidden; }
             #requisition-form, #requisition-form * { visibility: visible; }
             #requisition-form {
               position: absolute; left: 0; top: 0; width: 100%;
               font-family: 'Sarabun', 'TH Sarabun New', sans-serif !important;
-              font-size: 9px;
-              line-height: 1.15;
+              font-size: 12pt;
+              line-height: 1.1;
             }
             #requisition-form * { font-family: 'Sarabun', 'TH Sarabun New', sans-serif !important; }
             .print\\:hidden { display: none !important; }
             #requisition-form table td, #requisition-form table th {
               padding: 0px 2px !important;
-              font-size: 9px !important;
-              line-height: 1.1 !important;
+              font-size: 14pt !important;
+              line-height: 1.0 !important;
             }
-            #requisition-form h1 { font-size: 13px !important; margin: 0 !important; }
-            #requisition-form .sig-section { margin-top: 2px !important; }
-            #requisition-form .sig-section p { margin: 0 !important; line-height: 1.2 !important; }
-            #requisition-form canvas { max-height: 25px !important; }
+            #requisition-form h1 { font-size: 16pt !important; margin: 0 !important; }
+            #requisition-form .form-info { font-size: 14pt !important; line-height: 1.1 !important; }
+            #requisition-form .form-info * { font-size: 14pt !important; }
+            #requisition-form .sig-section { margin-top: 0px !important; }
+            #requisition-form .sig-section, #requisition-form .sig-section * {
+              font-size: 16pt !important;
+              line-height: 1.15 !important;
+            }
+            #requisition-form .sig-section p { margin: 0 !important; }
+            #requisition-form .sig-section .space-y-1 > * + * { margin-top: 0px !important; }
+            #requisition-form .sig-section .mt-3 { margin-top: 2px !important; }
+            #requisition-form .sig-section .mt-2 { margin-top: 1px !important; }
+            #requisition-form canvas { max-height: 20px !important; }
           }
         `}</style>
 
@@ -258,7 +267,7 @@ export default function StockOut() {
         </div>
 
         {/* Form Info */}
-        <div className="grid grid-cols-2 gap-x-8 gap-y-2 print:gap-y-0 print:gap-x-4 mb-2 print:mb-0 text-sm print:text-[9px]">
+        <div className="grid grid-cols-2 gap-x-8 gap-y-2 print:gap-y-0 print:gap-x-4 mb-2 print:mb-0 text-sm print:text-[9px] form-info">
           <div className="flex items-center gap-2">
             <Label className="whitespace-nowrap font-medium">วันที่:</Label>
             <Popover>
@@ -279,14 +288,14 @@ export default function StockOut() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-x-8 gap-y-2 print:gap-y-0 print:gap-x-4 mb-2 print:mb-0 text-sm print:text-[9px]">
+        <div className="grid grid-cols-2 gap-x-8 gap-y-2 print:gap-y-0 print:gap-x-4 mb-2 print:mb-0 text-sm print:text-[9px] form-info">
           <div className="flex items-center gap-2">
             <Label className="whitespace-nowrap font-medium">เรียน:</Label>
             <span className="text-muted-foreground print:text-black">ผู้อำนวยการโรงพยาบาลจังหวัด</span>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-x-8 gap-y-2 print:gap-y-0 print:gap-x-4 mb-2 print:mb-0 text-sm print:text-[9px]">
+        <div className="grid grid-cols-2 gap-x-8 gap-y-2 print:gap-y-0 print:gap-x-4 mb-2 print:mb-0 text-sm print:text-[9px] form-info">
           <div className="flex items-center gap-2">
             <Label className="whitespace-nowrap font-medium">ข้าพเจ้า:</Label>
             <Input value={requester} onChange={(e) => setRequester(e.target.value)} placeholder="ชื่อผู้เบิก" className="h-8 text-sm print:border-0 print:border-b print:rounded-none print:border-black print:px-0" />
@@ -297,7 +306,7 @@ export default function StockOut() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 mb-4 print:mb-1 text-sm print:text-[9px]">
+        <div className="flex items-center gap-2 mb-4 print:mb-1 text-sm print:text-[9px] form-info">
           <Label className="whitespace-nowrap font-medium">หน่วยงานที่เบิก (ฝ่ายงาน):</Label>
           <Select value={departmentId} onValueChange={setDepartmentId} disabled={isEditMode}>
             <SelectTrigger className="h-8 text-sm flex-1 print:border-0 print:border-b print:rounded-none print:border-black">
@@ -309,7 +318,7 @@ export default function StockOut() {
           </Select>
         </div>
 
-        <p className="text-sm print:text-[9px] mb-3 print:mb-1">มีความประสงค์ขอเบิกวัสดุที่ใช้ในราชการเพื่อจ่ายรายการดังต่อไปนี้</p>
+        <p className="text-sm print:text-[9px] mb-3 print:mb-1 form-info">มีความประสงค์ขอเบิกวัสดุที่ใช้ในราชการเพื่อจ่ายรายการดังต่อไปนี้</p>
 
         {/* Add item section - only in create mode */}
         {!isEditMode && (
@@ -431,14 +440,14 @@ export default function StockOut() {
         </div>
 
         {/* Signature Section */}
-        <div className="mt-4 print:mt-1 text-xs print:text-[8px] sig-section">
-          <div className="grid grid-cols-2 gap-6 print:gap-2">
+        <div className="mt-4 print:mt-0 text-xs print:text-[8px] sig-section">
+          <div className="grid grid-cols-2 gap-6 print:gap-1">
             {/* Left Column */}
             <div className="space-y-1">
               <p className="font-bold">เรียน หัวหน้ากลุ่มงาน / หน่วยงาน</p>
               <p className="pl-4">- เพื่อเห็นชอบให้เบิกวัสดุเพื่อใช้ในงานราชการ ใน</p>
               <p>หน่วยงาน.................................................................</p>
-              <div className="mt-3 space-y-1">
+              <div className="mt-2 space-y-1">
                 <div className="flex items-end gap-1">
                   <span>ลงชื่อ</span>
                   <SignaturePad label="ผู้เขียนคำขอ / ผู้รับวัสดุ" width={200} height={60} />
@@ -452,7 +461,7 @@ export default function StockOut() {
               <div className="flex gap-4">
                 <label className="flex items-center gap-1"><span className="inline-block w-4 h-4 border border-current print:border-black"></span> ส่งคืนแก้ไขคำขอ</label>
               </div>
-              <div className="mt-3 space-y-1">
+              <div className="mt-2 space-y-1">
                 <div className="flex items-end gap-1">
                   <span>(ลงชื่อ)</span>
                   <SignaturePad label="ผู้เบิก" width={200} height={60} />
@@ -471,7 +480,7 @@ export default function StockOut() {
             <div className="space-y-1">
               <p className="font-bold">เรียน หัวหน้าหน่วยพัสดุ</p>
               <p className="pl-4">- เพื่ออนุมัติเบิกจ่ายวัสดุตามคำขอข้างต้น</p>
-              <div className="mt-3 space-y-1">
+              <div className="mt-2 space-y-1">
                 <div className="flex items-end gap-1">
                   <span>(ลงชื่อ)</span>
                   <SignaturePad label="ผู้จ่าย" width={200} height={60} />
@@ -485,7 +494,7 @@ export default function StockOut() {
                 <p>- อนุมัติ</p>
                 <p>- รับทราบการเบิกจ่าย</p>
               </div>
-              <div className="mt-3 space-y-1">
+              <div className="mt-2 space-y-1">
                 <div className="flex items-end gap-1">
                   <span>(ลงชื่อ)</span>
                   <SignaturePad label="ผู้อนุมัติ" width={200} height={60} />

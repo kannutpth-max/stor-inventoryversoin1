@@ -223,19 +223,30 @@ export default function StockOut() {
       </div>
 
       {/* Printable Form */}
-      <div className="border border-border rounded-lg p-6 bg-background print:border-none print:rounded-none print:p-2 print:text-black print:text-[11px]" id="requisition-form">
+      <div className="border border-border rounded-lg p-6 bg-background print:border-none print:rounded-none print:p-0 print:text-black print:text-[9px]" id="requisition-form">
         <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
           @media print {
-            @page { size: A4; margin: 8mm; }
+            @page { size: A4; margin: 5mm 8mm; }
             body * { visibility: hidden; }
             #requisition-form, #requisition-form * { visibility: visible; }
-            #requisition-form { position: absolute; left: 0; top: 0; width: 100%; font-size: 11px; }
+            #requisition-form {
+              position: absolute; left: 0; top: 0; width: 100%;
+              font-family: 'Sarabun', 'TH Sarabun New', sans-serif !important;
+              font-size: 9px;
+              line-height: 1.15;
+            }
+            #requisition-form * { font-family: 'Sarabun', 'TH Sarabun New', sans-serif !important; }
             .print\\:hidden { display: none !important; }
             #requisition-form table td, #requisition-form table th {
-              padding: 1px 4px !important;
-              font-size: 11px !important;
-              line-height: 1.2 !important;
+              padding: 0px 2px !important;
+              font-size: 9px !important;
+              line-height: 1.1 !important;
             }
+            #requisition-form h1 { font-size: 13px !important; margin: 0 !important; }
+            #requisition-form .sig-section { margin-top: 2px !important; }
+            #requisition-form .sig-section p { margin: 0 !important; line-height: 1.2 !important; }
+            #requisition-form canvas { max-height: 25px !important; }
           }
         `}</style>
 

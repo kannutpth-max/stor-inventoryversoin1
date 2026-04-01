@@ -286,7 +286,7 @@ export default function StockOut() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-x-8 gap-y-2 mb-2 text-sm">
+        <div className="grid grid-cols-2 gap-x-8 gap-y-2 print:gap-y-0 print:gap-x-4 mb-2 print:mb-0 text-sm print:text-[9px]">
           <div className="flex items-center gap-2">
             <Label className="whitespace-nowrap font-medium">ข้าพเจ้า:</Label>
             <Input value={requester} onChange={(e) => setRequester(e.target.value)} placeholder="ชื่อผู้เบิก" className="h-8 text-sm print:border-0 print:border-b print:rounded-none print:border-black print:px-0" />

@@ -461,7 +461,7 @@ export default function StockOut() {
               <div className="flex gap-4">
                 <label className="flex items-center gap-1"><span className="inline-block w-4 h-4 border border-current print:border-black"></span> ส่งคืนแก้ไขคำขอ</label>
               </div>
-              <div className="mt-3 space-y-1">
+              <div className="mt-2 space-y-1">
                 <div className="flex items-end gap-1">
                   <span>(ลงชื่อ)</span>
                   <SignaturePad label="ผู้เบิก" width={200} height={60} />

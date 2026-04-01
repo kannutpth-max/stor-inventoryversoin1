@@ -407,7 +407,7 @@ export default function StockOut() {
               ))}
               {/* Empty rows */}
               {Array.from({ length: emptyRows }).map((_, i) => (
-                <TableRow key={`empty-${i}`} className="print:border-black h-6">
+                <TableRow key={`empty-${i}`} className="print:border-black h-6 print:h-4">
                   <TableCell className="border border-border print:border-black text-center text-muted-foreground py-0.5 text-xs">{items.length + i + 1}</TableCell>
                   <TableCell className="border border-border print:border-black py-0.5">&nbsp;</TableCell>
                   <TableCell className="border border-border print:border-black py-0.5"></TableCell>

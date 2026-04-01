@@ -447,7 +447,7 @@ export default function StockOut() {
               <p className="font-bold">เรียน หัวหน้ากลุ่มงาน / หน่วยงาน</p>
               <p className="pl-4">- เพื่อเห็นชอบให้เบิกวัสดุเพื่อใช้ในงานราชการ ใน</p>
               <p>หน่วยงาน.................................................................</p>
-              <div className="mt-3 space-y-1">
+              <div className="mt-2 space-y-1">
                 <div className="flex items-end gap-1">
                   <span>ลงชื่อ</span>
                   <SignaturePad label="ผู้เขียนคำขอ / ผู้รับวัสดุ" width={200} height={60} />

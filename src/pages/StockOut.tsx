@@ -227,26 +227,35 @@ export default function StockOut() {
         <style>{`
           @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
           @media print {
-            @page { size: A4; margin: 5mm 8mm; }
+            @page { size: A4; margin: 4mm 8mm; }
             body * { visibility: hidden; }
             #requisition-form, #requisition-form * { visibility: visible; }
             #requisition-form {
               position: absolute; left: 0; top: 0; width: 100%;
               font-family: 'Sarabun', 'TH Sarabun New', sans-serif !important;
-              font-size: 9px;
-              line-height: 1.15;
+              font-size: 12pt;
+              line-height: 1.1;
             }
             #requisition-form * { font-family: 'Sarabun', 'TH Sarabun New', sans-serif !important; }
             .print\\:hidden { display: none !important; }
             #requisition-form table td, #requisition-form table th {
               padding: 0px 2px !important;
-              font-size: 9px !important;
-              line-height: 1.1 !important;
+              font-size: 14pt !important;
+              line-height: 1.0 !important;
             }
-            #requisition-form h1 { font-size: 13px !important; margin: 0 !important; }
-            #requisition-form .sig-section { margin-top: 2px !important; }
-            #requisition-form .sig-section p { margin: 0 !important; line-height: 1.2 !important; }
-            #requisition-form canvas { max-height: 25px !important; }
+            #requisition-form h1 { font-size: 16pt !important; margin: 0 !important; }
+            #requisition-form .form-info { font-size: 14pt !important; line-height: 1.1 !important; }
+            #requisition-form .form-info * { font-size: 14pt !important; }
+            #requisition-form .sig-section { margin-top: 0px !important; }
+            #requisition-form .sig-section, #requisition-form .sig-section * {
+              font-size: 16pt !important;
+              line-height: 1.15 !important;
+            }
+            #requisition-form .sig-section p { margin: 0 !important; }
+            #requisition-form .sig-section .space-y-1 > * + * { margin-top: 0px !important; }
+            #requisition-form .sig-section .mt-3 { margin-top: 2px !important; }
+            #requisition-form .sig-section .mt-2 { margin-top: 1px !important; }
+            #requisition-form canvas { max-height: 20px !important; }
           }
         `}</style>
 

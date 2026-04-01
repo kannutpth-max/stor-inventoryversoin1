@@ -364,7 +364,7 @@ export default function StockOut() {
             </TableHeader>
             <TableBody>
               {items.map((item, index) => (
-                <TableRow key={item.id} className="print:border-black h-6">
+                <TableRow key={item.id} className="print:border-black h-6 print:h-4">
                   <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">{index + 1}</TableCell>
                   <TableCell className="border border-border print:border-black py-0.5 text-xs">{item.productName}</TableCell>
                   <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">{item.unit}</TableCell>

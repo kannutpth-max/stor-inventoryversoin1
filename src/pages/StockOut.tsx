@@ -251,10 +251,10 @@ export default function StockOut() {
         `}</style>
 
         {/* Header */}
-        <div className="relative mb-3">
-          <p className="text-sm text-muted-foreground print:text-black text-right">เลขที่รับ...............</p>
+        <div className="relative mb-1 print:mb-0">
+          <p className="text-sm text-muted-foreground print:text-black print:text-[9px] text-right">เลขที่รับ...............</p>
           <h1 className="text-lg font-bold text-center">ใบเบิกวัสดุสำนักงาน / งานบ้านงานครัว</h1>
-          <p className="text-sm text-muted-foreground print:text-black text-center">โรงพยาบาลประชาธิปัตย์ อำเภอธัญบุรี</p>
+          <p className="text-sm text-muted-foreground print:text-black print:text-[9px] text-center">โรงพยาบาลประชาธิปัตย์ อำเภอธัญบุรี</p>
         </div>
 
         {/* Form Info */}

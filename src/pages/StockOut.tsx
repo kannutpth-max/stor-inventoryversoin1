@@ -179,7 +179,7 @@ export default function StockOut() {
     setItems(items.map(i => i.id === id ? { ...i, dispenseQty: qty } : i));
   };
 
-  const emptyRows = Math.max(0, 15 - items.length);
+  const emptyRows = Math.max(0, 17 - items.length);
 
   return (
     <div className="space-y-4">
@@ -223,18 +223,18 @@ export default function StockOut() {
       </div>
 
       {/* Printable Form */}
-      <div className="border border-border rounded-lg p-6 bg-background print:border-none print:rounded-none print:p-0 print:text-black print:text-[9px]" id="requisition-form">
+      <div className="border border-border rounded-lg p-6 bg-background print:border-none print:rounded-none print:p-0 print:text-black" id="requisition-form">
         <style>{`
           @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
           @media print {
-            @page { size: A4; margin: 5mm 10mm; }
+            @page { size: A4; margin: 6mm 12mm; }
             body * { visibility: hidden; }
             #requisition-form, #requisition-form * { visibility: visible; }
             #requisition-form {
               position: absolute; left: 0; top: 0; width: 100%;
               font-family: 'Sarabun', 'TH Sarabun New', sans-serif !important;
-              font-size: 11pt;
-              line-height: 1.15;
+              font-size: 14pt;
+              line-height: 1.2;
               color: #000 !important;
             }
             #requisition-form * {
@@ -242,23 +242,23 @@ export default function StockOut() {
               color: #000 !important;
             }
             .print\\:hidden { display: none !important; }
-            #requisition-form h1 { font-size: 14pt !important; margin: 0 !important; font-weight: 700 !important; }
-            #requisition-form .form-subtitle { font-size: 11pt !important; }
-            #requisition-form .form-info, #requisition-form .form-info * { font-size: 11pt !important; line-height: 1.2 !important; }
+            #requisition-form h1 { font-size: 20pt !important; margin: 0 !important; font-weight: 700 !important; }
+            #requisition-form .form-subtitle { font-size: 14pt !important; }
+            #requisition-form .form-info, #requisition-form .form-info * { font-size: 14pt !important; line-height: 1.3 !important; }
             #requisition-form table { border-collapse: collapse !important; }
             #requisition-form table td, #requisition-form table th {
-              padding: 0px 3px !important;
-              font-size: 11pt !important;
-              line-height: 1.1 !important;
+              padding: 0px 4px !important;
+              font-size: 14pt !important;
+              line-height: 1.15 !important;
               border-color: #000 !important;
             }
             #requisition-form .sig-section {
-              margin-top: 2px !important;
+              margin-top: 1px !important;
               page-break-inside: avoid;
             }
             #requisition-form .sig-section, #requisition-form .sig-section * {
-              font-size: 11pt !important;
-              line-height: 1.15 !important;
+              font-size: 14pt !important;
+              line-height: 1.2 !important;
             }
             #requisition-form .sig-section p { margin: 0 !important; padding: 0 !important; }
             #requisition-form .sig-section .sig-block { margin-top: 0px !important; }
@@ -268,77 +268,75 @@ export default function StockOut() {
               border-bottom: 1px dotted #000;
               text-align: center;
             }
-            #requisition-form canvas { max-height: 18px !important; }
+            #requisition-form canvas { max-height: 16px !important; }
             #requisition-form .sig-section .checkbox-item {
-              display: flex; align-items: center; gap: 3px; margin: 0;
+              display: flex; align-items: center; gap: 4px; margin: 0;
             }
             #requisition-form .sig-section .checkbox-box {
-              width: 10px; height: 10px; border: 1px solid #000; display: inline-block; flex-shrink: 0;
+              width: 11px; height: 11px; border: 1px solid #000; display: inline-block; flex-shrink: 0;
             }
-            #requisition-form .sig-grid { gap: 8px !important; }
+            #requisition-form .sig-grid { gap: 12px !important; }
+            #requisition-form .receipt-no { font-size: 14pt !important; }
           }
         `}</style>
 
         {/* Header */}
         <div className="relative mb-1 print:mb-0">
-          <p className="text-sm text-muted-foreground print:text-black print:text-[9px] text-right">เลขที่รับ...............</p>
-          <h1 className="text-lg font-bold text-center">ใบเบิกวัสดุสำนักงาน / งานบ้านงานครัว</h1>
-          <p className="text-sm text-muted-foreground print:text-black print:text-[9px] text-center">โรงพยาบาลประชาธิปัตย์ อำเภอธัญบุรี</p>
+          <p className="text-sm text-muted-foreground print:text-black text-right receipt-no">เลขที่เบิก.....................</p>
+          <h1 className="text-lg font-bold text-center print:text-[20pt]">ใบเบิกวัสดุสำนักงาน / งานบ้านงานครัว</h1>
+          <p className="text-sm text-muted-foreground print:text-black text-right form-subtitle">โรงพยาบาลประชาธิปัตย์</p>
+          <p className="text-sm text-muted-foreground print:text-black text-right form-info">วันที่...................../............................./.......................</p>
         </div>
 
         {/* Form Info */}
-        <div className="grid grid-cols-2 gap-x-8 gap-y-2 print:gap-y-0 print:gap-x-4 mb-2 print:mb-0 text-sm print:text-[9px] form-info">
+        <div className="space-y-1 print:space-y-0 mb-2 print:mb-0 text-sm form-info">
+          <div className="flex items-center gap-2">
+            <Label className="whitespace-nowrap font-medium">เรียน ผู้อำนวยการโรงพยาบาลประชาธิปัตย์</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Label className="whitespace-nowrap font-medium">ข้าพเจ้า</Label>
+            <Input value={requester} onChange={(e) => setRequester(e.target.value)} placeholder="ชื่อผู้เบิก" className="h-8 text-sm flex-1 print:border-0 print:border-b print:border-dotted print:rounded-none print:border-black print:px-0" />
+            <Label className="whitespace-nowrap font-medium">ตำแหน่ง</Label>
+            <Input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="ตำแหน่ง" className="h-8 text-sm flex-1 print:border-0 print:border-b print:border-dotted print:rounded-none print:border-black print:px-0" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Label className="whitespace-nowrap font-medium">หน่วยงานผู้เบิก (ฝ่าย/งาน)</Label>
+            <Select value={departmentId} onValueChange={setDepartmentId} disabled={isEditMode}>
+              <SelectTrigger className="h-8 text-sm flex-1 print:border-0 print:border-b print:border-dotted print:rounded-none print:border-black">
+                <SelectValue placeholder="เลือกหน่วยงาน" />
+              </SelectTrigger>
+              <SelectContent>
+                {departments.map((d) => (<SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>))}
+              </SelectContent>
+            </Select>
+            <span className="print:inline hidden">มีความประสงค์จะขอเบิกวัสดุเพื่อใช้ในราชการดังรายการต่อไปนี้</span>
+          </div>
+        </div>
+
+        {/* Hidden date/withdraw fields for data binding - print:hidden */}
+        <div className="grid grid-cols-2 gap-x-8 gap-y-2 mb-2 text-sm form-info print:hidden">
           <div className="flex items-center gap-2">
             <Label className="whitespace-nowrap font-medium">วันที่:</Label>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className={cn("flex-1 justify-start text-left font-normal h-8 print:border-0 print:border-b print:rounded-none print:border-black print:px-0", !date && "text-muted-foreground")} disabled={isEditMode}>
-                  <Calendar className="mr-2 h-3 w-3 print:hidden" />
+                <Button variant="outline" size="sm" className={cn("flex-1 justify-start text-left font-normal h-8", !date && "text-muted-foreground")} disabled={isEditMode}>
+                  <Calendar className="mr-2 h-3 w-3" />
                   {date ? format(date, "d MMMM yyyy", { locale: th }) : "เลือกวันที่"}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 print:hidden" align="start">
+              <PopoverContent className="w-auto p-0" align="start">
                 <CalendarComponent mode="single" selected={date} onSelect={(d) => d && setDate(d)} initialFocus className="pointer-events-auto" />
               </PopoverContent>
             </Popover>
           </div>
           <div className="flex items-center gap-2">
             <Label className="whitespace-nowrap font-medium">เลขที่:</Label>
-            <Input value={withdrawNo} onChange={(e) => setWithdrawNo(e.target.value)} placeholder="WD-XXXX" className="h-8 text-sm print:border-0 print:border-b print:rounded-none print:border-black print:px-0" disabled={isEditMode} />
+            <Input value={withdrawNo} onChange={(e) => setWithdrawNo(e.target.value)} placeholder="WD-XXXX" className="h-8 text-sm" disabled={isEditMode} />
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-x-8 gap-y-2 print:gap-y-0 print:gap-x-4 mb-2 print:mb-0 text-sm print:text-[9px] form-info">
-          <div className="flex items-center gap-2">
-            <Label className="whitespace-nowrap font-medium">เรียน:</Label>
-            <span className="text-muted-foreground print:text-black">ผู้อำนวยการโรงพยาบาลจังหวัด</span>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-x-8 gap-y-2 print:gap-y-0 print:gap-x-4 mb-2 print:mb-0 text-sm print:text-[9px] form-info">
-          <div className="flex items-center gap-2">
-            <Label className="whitespace-nowrap font-medium">ข้าพเจ้า:</Label>
-            <Input value={requester} onChange={(e) => setRequester(e.target.value)} placeholder="ชื่อผู้เบิก" className="h-8 text-sm print:border-0 print:border-b print:rounded-none print:border-black print:px-0" />
-          </div>
-          <div className="flex items-center gap-2">
-            <Label className="whitespace-nowrap font-medium">ตำแหน่ง:</Label>
-            <Input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="ตำแหน่ง" className="h-8 text-sm print:border-0 print:border-b print:rounded-none print:border-black print:px-0" />
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 mb-4 print:mb-1 text-sm print:text-[9px] form-info">
-          <Label className="whitespace-nowrap font-medium">หน่วยงานที่เบิก (ฝ่ายงาน):</Label>
-          <Select value={departmentId} onValueChange={setDepartmentId} disabled={isEditMode}>
-            <SelectTrigger className="h-8 text-sm flex-1 print:border-0 print:border-b print:rounded-none print:border-black">
-              <SelectValue placeholder="เลือกหน่วยงาน" />
-            </SelectTrigger>
-            <SelectContent>
-              {departments.map((d) => (<SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <p className="text-sm print:text-[9px] mb-3 print:mb-1 form-info">มีความประสงค์ขอเบิกวัสดุที่ใช้ในราชการเพื่อจ่ายรายการดังต่อไปนี้</p>
+        <p className="text-sm mb-3 print:mb-0 form-info print:block hidden">มีความประสงค์จะขอเบิกวัสดุเพื่อใช้ในราชการดังรายการต่อไปนี้</p>
+        <p className="text-sm mb-3 form-info print:hidden">มีความประสงค์ขอเบิกวัสดุที่ใช้ในราชการเพื่อจ่ายรายการดังต่อไปนี้</p>
 
         {/* Add item section - only in create mode */}
         {!isEditMode && (
@@ -367,37 +365,48 @@ export default function StockOut() {
           <Table>
             <TableHeader>
               <TableRow className="print:border-black">
-                <TableHead rowSpan={2} className="border border-border print:border-black text-center w-12 text-foreground">ลำดับ</TableHead>
-                <TableHead rowSpan={2} className="border border-border print:border-black text-center text-foreground">รายละเอียด</TableHead>
-                <TableHead rowSpan={2} className="border border-border print:border-black text-center w-20 text-foreground">หน่วย</TableHead>
-                <TableHead colSpan={2} className="border border-border print:border-black text-center text-foreground">คงเหลือ</TableHead>
-                {isEditMode ? (
-                  <TableHead colSpan={2} className="border border-border print:border-black text-center text-foreground">จำนวน</TableHead>
-                ) : (
-                  <TableHead rowSpan={2} className="border border-border print:border-black text-center w-20 text-foreground">จำนวนเบิก</TableHead>
-                )}
+                <TableHead rowSpan={2} className="border border-border print:border-black text-center w-12 text-foreground">ลำดับที่</TableHead>
+                <TableHead rowSpan={2} className="border border-border print:border-black text-center text-foreground">รหัส/รายการ</TableHead>
+                <TableHead rowSpan={2} className="border border-border print:border-black text-center w-16 text-foreground">หน่วย</TableHead>
+                <TableHead colSpan={1} className="border border-border print:border-black text-center text-foreground">คงเหลือ</TableHead>
+                <TableHead colSpan={2} className="border border-border print:border-black text-center text-foreground">จำนวน</TableHead>
+                <TableHead colSpan={1} className="border border-border print:border-black text-center text-foreground">คงเหลือ</TableHead>
                 {!isEditMode && (
                   <TableHead rowSpan={2} className="border border-border print:border-black text-center text-foreground print:hidden w-12">ลบ</TableHead>
                 )}
               </TableRow>
               <TableRow className="print:border-black">
-                <TableHead className="border border-border print:border-black text-center w-20 text-foreground">ก่อนจ่าย</TableHead>
-                <TableHead className="border border-border print:border-black text-center w-20 text-foreground">หลังจ่าย</TableHead>
-                {isEditMode && (
-                  <>
-                    <TableHead className="border border-border print:border-black text-center w-16 text-foreground">เบิก</TableHead>
-                    <TableHead className="border border-border print:border-black text-center w-16 text-foreground">จ่าย</TableHead>
-                  </>
-                )}
+                <TableHead className="border border-border print:border-black text-center w-16 text-foreground">ก่อนจ่าย</TableHead>
+                <TableHead className="border border-border print:border-black text-center w-14 text-foreground">เบิก</TableHead>
+                <TableHead className="border border-border print:border-black text-center w-14 text-foreground">จ่าย</TableHead>
+                <TableHead className="border border-border print:border-black text-center w-16 text-foreground">หลังจ่าย</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {items.map((item, index) => (
-                <TableRow key={item.id} className="print:border-black h-6 print:h-4">
+                <TableRow key={item.id} className="print:border-black h-6 print:h-[18px]">
                   <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">{index + 1}</TableCell>
                   <TableCell className="border border-border print:border-black py-0.5 text-xs">{item.productName}</TableCell>
                   <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">{item.unit}</TableCell>
                   <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">{item.stock.toLocaleString()}</TableCell>
+                  <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">{item.quantity.toLocaleString()}</TableCell>
+                  {isEditMode ? (
+                    <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">
+                      {item.status === "dispensed" ? (
+                        <span className="text-muted-foreground">{item.dispenseQty || item.quantity}</span>
+                      ) : (
+                        <Input
+                          type="number"
+                          value={item.dispenseQty || ""}
+                          onChange={(e) => updateDispenseQty(item.id, parseInt(e.target.value) || 0)}
+                          className="h-6 w-16 text-xs text-center p-0 mx-auto print:border-0 print:border-b print:rounded-none"
+                          max={item.quantity}
+                        />
+                      )}
+                    </TableCell>
+                  ) : (
+                    <TableCell className="border border-border print:border-black text-center py-0.5 text-xs"></TableCell>
+                  )}
                   <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">
                     {isEditMode && item.dispenseQty > 0
                       ? (item.stock - item.dispenseQty).toLocaleString()
@@ -405,53 +414,27 @@ export default function StockOut() {
                         ? (item.stock - item.quantity).toLocaleString()
                         : item.stock.toLocaleString()}
                   </TableCell>
-                  {isEditMode ? (
-                    <>
-                      <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">{item.quantity.toLocaleString()}</TableCell>
-                      <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">
-                        {item.status === "dispensed" ? (
-                          <span className="text-muted-foreground">จ่ายแล้ว</span>
-                        ) : (
-                          <Input
-                            type="number"
-                            value={item.dispenseQty || ""}
-                            onChange={(e) => updateDispenseQty(item.id, parseInt(e.target.value) || 0)}
-                            className="h-6 w-16 text-xs text-center p-0 mx-auto print:border-0 print:border-b print:rounded-none"
-                            max={item.quantity}
-                          />
-                        )}
-                      </TableCell>
-                    </>
-                  ) : (
-                    <>
-                      <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">{item.quantity.toLocaleString()}</TableCell>
-                      <TableCell className="border border-border print:border-black text-center print:hidden py-0.5">
-                        <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(item.id)} className="h-5 w-5 text-destructive hover:text-destructive">
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </TableCell>
-                    </>
+                  {!isEditMode && (
+                    <TableCell className="border border-border print:border-black text-center print:hidden py-0.5">
+                      <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(item.id)} className="h-5 w-5 text-destructive hover:text-destructive">
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </TableCell>
                   )}
                 </TableRow>
               ))}
               {/* Empty rows */}
               {Array.from({ length: emptyRows }).map((_, i) => (
-                <TableRow key={`empty-${i}`} className="print:border-black h-6 print:h-4">
+                <TableRow key={`empty-${i}`} className="print:border-black h-6 print:h-[18px]">
                   <TableCell className="border border-border print:border-black text-center text-muted-foreground py-0.5 text-xs">{items.length + i + 1}</TableCell>
                   <TableCell className="border border-border print:border-black py-0.5">&nbsp;</TableCell>
                   <TableCell className="border border-border print:border-black py-0.5"></TableCell>
                   <TableCell className="border border-border print:border-black py-0.5"></TableCell>
                   <TableCell className="border border-border print:border-black py-0.5"></TableCell>
-                  {isEditMode ? (
-                    <>
-                      <TableCell className="border border-border print:border-black py-0.5"></TableCell>
-                      <TableCell className="border border-border print:border-black py-0.5"></TableCell>
-                    </>
-                  ) : (
-                    <>
-                      <TableCell className="border border-border print:border-black py-0.5"></TableCell>
-                      <TableCell className="border border-border print:border-black print:hidden py-0.5"></TableCell>
-                    </>
+                  <TableCell className="border border-border print:border-black py-0.5"></TableCell>
+                  <TableCell className="border border-border print:border-black py-0.5"></TableCell>
+                  {!isEditMode && (
+                    <TableCell className="border border-border print:border-black print:hidden py-0.5"></TableCell>
                   )}
                 </TableRow>
               ))}
@@ -460,25 +443,25 @@ export default function StockOut() {
         </div>
 
         {/* Signature Section */}
-        <div className="mt-4 print:mt-0 text-xs sig-section">
-          <div className="grid grid-cols-2 gap-8 print:gap-2 sig-grid">
-            {/* Left Column - ผู้เบิก */}
+        <div className="mt-4 print:mt-1 text-xs sig-section">
+          <div className="grid grid-cols-2 gap-8 print:gap-3 sig-grid">
+            {/* Left Column */}
             <div className="space-y-0">
               <p className="font-bold">เรียน หัวหน้ากลุ่มงาน / หน่วยงาน</p>
-              <p className="pl-4">- เพื่อเห็นชอบให้เบิกวัสดุเพื่อใช้ในงานราชการ</p>
+              <p className="pl-4">- เพื่อเห็นชอบให้เบิกวัสดุเพื่อใช้ในงานราชการ ใน</p>
               <p>หน่วยงาน..................................................................</p>
 
-              <div className="sig-block mt-2 print:mt-0">
+              <div className="sig-block mt-1 print:mt-0">
                 <p className="font-bold">ผู้เขียนคำขอ / ผู้รับวัสดุ</p>
                 <div className="flex items-end gap-1">
                   <span>ลงชื่อ</span>
                   <SignaturePad label="ผู้เขียนคำขอ" width={180} height={50} />
                   <span>ผู้เขียนคำขอ</span>
                 </div>
-                <p className="text-center">(.......................................................) และ(ผู้รับวัสดุ)</p>
+                <p>(.....................................................)  และ(ผู้รับวัสดุ)</p>
               </div>
 
-              <div className="flex gap-4 mt-1 print:mt-0">
+              <div className="flex gap-4 mt-0">
                 <label className="flex items-center gap-1 checkbox-item">
                   <span className="inline-block w-3 h-3 border border-current print:border-black checkbox-box"></span> เห็นชอบ
                 </label>
@@ -487,68 +470,66 @@ export default function StockOut() {
                 </label>
               </div>
 
-              <div className="sig-block mt-2 print:mt-0">
-                <p className="text-center font-bold">ผู้เบิก</p>
+              <div className="sig-block mt-1 print:mt-0">
                 <div className="flex items-end gap-1">
                   <span>ลงชื่อ</span>
                   <SignaturePad label="ผู้เบิก" width={180} height={50} />
                   <span>(ผู้เบิก)</span>
                 </div>
-                <p className="text-center">(..........................................................)</p>
+                <p>(..........................................................)</p>
                 <p>ตำแหน่ง.................................................................</p>
               </div>
 
-              <div className="sig-block mt-1 print:mt-0">
-                <p className="text-center font-bold">หัวหน้ากลุ่มงาน</p>
+              <div className="sig-block mt-0">
+                <p className="text-center font-bold">หัวหน้ากลุ่มงาน / หน่วยงาน............................................</p>
                 <div className="flex items-end gap-1">
                   <span>ลงชื่อ</span>
                   <SignaturePad label="หัวหน้ากลุ่มงาน" width={180} height={50} />
                 </div>
-                <p className="text-center">(..........................................................)</p>
+                <p>(..........................................................)</p>
                 <p>ตำแหน่ง.................................................................</p>
                 <p>วันที่............./................./.................</p>
               </div>
             </div>
 
-            {/* Right Column - ผู้จ่าย/อนุมัติ */}
+            {/* Right Column */}
             <div className="space-y-0">
               <p className="font-bold">เรียน หัวหน้าหน่วยพัสดุ</p>
               <p className="pl-4">- เพื่ออนุมัติเบิกจ่ายวัสดุตามคำขอข้างต้น</p>
 
-              <div className="sig-block mt-2 print:mt-0">
+              <div className="sig-block mt-1 print:mt-0">
                 <p className="text-center font-bold">ผู้จ่าย</p>
                 <div className="flex items-end gap-1">
-                  <span>ลงชื่อ</span>
+                  <span>(ลงชื่อ)</span>
                   <SignaturePad label="ผู้จ่าย" width={180} height={50} />
                   <span>(ผู้จ่ายและลงทะเบียน)</span>
                 </div>
-                <p className="text-center">(..........................................................)</p>
+                <p>(..........................................................)</p>
                 <p>ตำแหน่ง.................................................................</p>
                 <p>วันที่............./................./.................</p>
               </div>
 
-              <div className="mt-1 print:mt-0">
+              <div className="mt-0">
                 <p className="pl-4">- อนุมัติ</p>
                 <p className="pl-4">- รับทราบการเบิกจ่าย</p>
               </div>
 
-              <div className="sig-block mt-2 print:mt-0">
-                <p className="text-center font-bold">ผู้อนุมัติ</p>
+              <div className="sig-block mt-1 print:mt-0">
                 <div className="flex items-end gap-1">
-                  <span>ลงชื่อ</span>
+                  <span>(ลงชื่อ)</span>
                   <SignaturePad label="ผู้อนุมัติ" width={180} height={50} />
                   <span>(ผู้อนุมัติเบิกจ่าย)</span>
                 </div>
-                <p className="text-center">(..........................................................)</p>
+                <p>(..........................................................)</p>
               </div>
 
-              <div className="sig-block mt-1 print:mt-0">
+              <div className="sig-block mt-0">
                 <p className="text-center font-bold">หัวหน้าหน่วยพัสดุ</p>
                 <div className="flex items-end gap-1">
                   <span>ลงชื่อ</span>
                   <SignaturePad label="หัวหน้าหน่วยพัสดุ" width={180} height={50} />
                 </div>
-                <p className="text-center">(..........................................................)</p>
+                <p>(..........................................................)</p>
                 <p>ตำแหน่ง.................................................................</p>
                 <p>วันที่............./................./.................</p>
               </div>

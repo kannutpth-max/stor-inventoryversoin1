@@ -179,7 +179,7 @@ export default function StockOut() {
     setItems(items.map(i => i.id === id ? { ...i, dispenseQty: qty } : i));
   };
 
-  const emptyRows = Math.max(0, 17 - items.length);
+  const emptyRows = Math.max(0, 15 - items.length);
 
   return (
     <div className="space-y-4">

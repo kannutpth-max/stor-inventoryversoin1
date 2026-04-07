@@ -262,7 +262,7 @@ export default function StockOut() {
             }
             #requisition-form .sig-section p { margin: 0 !important; padding: 0 !important; }
             #requisition-form .sig-section .sig-block { margin-top: 0px !important; }
-            #requisition-form canvas { max-height: 14px !important; }
+            
             #requisition-form .sig-section .checkbox-item {
               display: inline-flex; align-items: center; gap: 3px; margin: 0;
             }

@@ -481,11 +481,7 @@ export default function StockOut() {
 
               <p className="pl-4 mt-0">- อนุมัติ</p>
               <p className="pl-4">- รับทราบการเบิกจ่าย</p>
-              <div className="flex items-end gap-1">
-                <span>(ลงชื่อ)</span>
-                <SignaturePad label="ผู้อนุมัติ" width={180} height={50} />
-                <span>(ผู้อนุมัติเบิกจ่าย)</span>
-              </div>
+              <p>(ลงชื่อ)...................................................(ผู้อนุมัติเบิกจ่าย)</p>
               <p>(..........................................................)</p>
 
               <p className="text-center font-bold mt-0">หัวหน้าหน่วยพัสดุ</p>

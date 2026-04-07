@@ -227,14 +227,14 @@ export default function StockOut() {
         <style>{`
           @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
           @media print {
-            @page { size: A4; margin: 6mm 12mm; }
+            @page { size: A4; margin: 5mm 10mm; }
             body * { visibility: hidden; }
             #requisition-form, #requisition-form * { visibility: visible; }
             #requisition-form {
               position: absolute; left: 0; top: 0; width: 100%;
               font-family: 'Sarabun', 'TH Sarabun New', sans-serif !important;
-              font-size: 14pt;
-              line-height: 1.2;
+              font-size: 13pt;
+              line-height: 1.15;
               color: #000 !important;
             }
             #requisition-form * {
@@ -242,41 +242,35 @@ export default function StockOut() {
               color: #000 !important;
             }
             .print\\:hidden { display: none !important; }
-            #requisition-form h1 { font-size: 20pt !important; margin: 0 !important; font-weight: 700 !important; }
-            #requisition-form .form-subtitle { font-size: 14pt !important; }
-            #requisition-form .form-info, #requisition-form .form-info * { font-size: 14pt !important; line-height: 1.3 !important; }
+            #requisition-form h1 { font-size: 18pt !important; margin: 0 !important; font-weight: 700 !important; }
+            #requisition-form .form-subtitle { font-size: 13pt !important; }
+            #requisition-form .form-info, #requisition-form .form-info * { font-size: 13pt !important; line-height: 1.2 !important; }
             #requisition-form table { border-collapse: collapse !important; }
             #requisition-form table td, #requisition-form table th {
-              padding: 0px 4px !important;
-              font-size: 14pt !important;
-              line-height: 1.15 !important;
+              padding: 0px 3px !important;
+              font-size: 12pt !important;
+              line-height: 1.1 !important;
               border-color: #000 !important;
             }
             #requisition-form .sig-section {
-              margin-top: 1px !important;
+              margin-top: 2px !important;
               page-break-inside: avoid;
             }
             #requisition-form .sig-section, #requisition-form .sig-section * {
-              font-size: 14pt !important;
-              line-height: 1.2 !important;
+              font-size: 13pt !important;
+              line-height: 1.15 !important;
             }
             #requisition-form .sig-section p { margin: 0 !important; padding: 0 !important; }
             #requisition-form .sig-section .sig-block { margin-top: 0px !important; }
-            #requisition-form .sig-section .sig-line {
-              display: inline-block;
-              min-width: 140px;
-              border-bottom: 1px dotted #000;
-              text-align: center;
-            }
-            #requisition-form canvas { max-height: 16px !important; }
+            #requisition-form canvas { max-height: 14px !important; }
             #requisition-form .sig-section .checkbox-item {
-              display: flex; align-items: center; gap: 4px; margin: 0;
+              display: inline-flex; align-items: center; gap: 3px; margin: 0;
             }
             #requisition-form .sig-section .checkbox-box {
-              width: 11px; height: 11px; border: 1px solid #000; display: inline-block; flex-shrink: 0;
+              width: 10px; height: 10px; border: 1px solid #000; display: inline-block; flex-shrink: 0;
             }
-            #requisition-form .sig-grid { gap: 12px !important; }
-            #requisition-form .receipt-no { font-size: 14pt !important; }
+            #requisition-form .sig-grid { gap: 8px !important; }
+            #requisition-form .receipt-no { font-size: 13pt !important; }
           }
         `}</style>
 
@@ -443,23 +437,20 @@ export default function StockOut() {
         </div>
 
         {/* Signature Section */}
-        <div className="mt-4 print:mt-1 text-xs sig-section">
-          <div className="grid grid-cols-2 gap-8 print:gap-3 sig-grid">
+        <div className="mt-3 print:mt-0 text-xs sig-section">
+          <div className="grid grid-cols-2 gap-6 print:gap-2 sig-grid">
             {/* Left Column */}
             <div className="space-y-0">
               <p className="font-bold">เรียน หัวหน้ากลุ่มงาน / หน่วยงาน</p>
               <p className="pl-4">- เพื่อเห็นชอบให้เบิกวัสดุเพื่อใช้ในงานราชการ ใน</p>
               <p>หน่วยงาน..................................................................</p>
-
-              <div className="sig-block mt-1 print:mt-0">
-                <p className="font-bold">ผู้เขียนคำขอ / ผู้รับวัสดุ</p>
-                <div className="flex items-end gap-1">
-                  <span>ลงชื่อ</span>
-                  <SignaturePad label="ผู้เขียนคำขอ" width={180} height={50} />
-                  <span>ผู้เขียนคำขอ</span>
-                </div>
-                <p>(.....................................................)  และ(ผู้รับวัสดุ)</p>
+              <p>&nbsp;</p>
+              <div className="flex items-end gap-1">
+                <span>ลงชื่อ</span>
+                <SignaturePad label="ผู้เขียนคำขอ" width={180} height={50} />
+                <span>ผู้เขียนคำขอ</span>
               </div>
+              <p>(.....................................................)  และ(ผู้รับวัสดุ)</p>
 
               <div className="flex gap-4 mt-0">
                 <label className="flex items-center gap-1 checkbox-item">
@@ -469,70 +460,57 @@ export default function StockOut() {
                   <span className="inline-block w-3 h-3 border border-current print:border-black checkbox-box"></span> ส่งคืนแก้ไขคำขอ
                 </label>
               </div>
-
-              <div className="sig-block mt-1 print:mt-0">
-                <div className="flex items-end gap-1">
-                  <span>ลงชื่อ</span>
-                  <SignaturePad label="ผู้เบิก" width={180} height={50} />
-                  <span>(ผู้เบิก)</span>
-                </div>
-                <p>(..........................................................)</p>
-                <p>ตำแหน่ง.................................................................</p>
+              <p>&nbsp;</p>
+              <div className="flex items-end gap-1">
+                <span>(ลงชื่อ)</span>
+                <SignaturePad label="ผู้เบิก" width={180} height={50} />
+                <span>(ผู้เบิก)</span>
               </div>
+              <p>(..........................................................)</p>
+              <p>ตำแหน่ง.................................................................</p>
 
-              <div className="sig-block mt-0">
-                <p className="text-center font-bold">หัวหน้ากลุ่มงาน / หน่วยงาน............................................</p>
-                <div className="flex items-end gap-1">
-                  <span>ลงชื่อ</span>
-                  <SignaturePad label="หัวหน้ากลุ่มงาน" width={180} height={50} />
-                </div>
-                <p>(..........................................................)</p>
-                <p>ตำแหน่ง.................................................................</p>
-                <p>วันที่............./................./.................</p>
+              <p className="text-center font-bold mt-0">หัวหน้ากลุ่มงาน / หน่วยงาน</p>
+              <p>ลงชื่อ.........................................................</p>
+              <div className="flex items-end gap-1">
+                <span>ลงชื่อ</span>
+                <SignaturePad label="หัวหน้ากลุ่มงาน" width={180} height={50} />
               </div>
+              <p>(..........................................................)</p>
+              <p>ตำแหน่ง.................................................................</p>
+              <p>วันที่............./................./.................</p>
             </div>
 
             {/* Right Column */}
             <div className="space-y-0">
               <p className="font-bold">เรียน หัวหน้าหน่วยพัสดุ</p>
               <p className="pl-4">- เพื่ออนุมัติเบิกจ่ายวัสดุตามคำขอข้างต้น</p>
-
-              <div className="sig-block mt-1 print:mt-0">
-                <p className="text-center font-bold">ผู้จ่าย</p>
-                <div className="flex items-end gap-1">
-                  <span>(ลงชื่อ)</span>
-                  <SignaturePad label="ผู้จ่าย" width={180} height={50} />
-                  <span>(ผู้จ่ายและลงทะเบียน)</span>
-                </div>
-                <p>(..........................................................)</p>
-                <p>ตำแหน่ง.................................................................</p>
-                <p>วันที่............./................./.................</p>
+              <p className="text-center font-bold">ผู้จ่าย</p>
+              <div className="flex items-end gap-1">
+                <span>(ลงชื่อ)</span>
+                <SignaturePad label="ผู้จ่าย" width={180} height={50} />
+                <span>(ผู้จ่ายและลงทะเบียน)</span>
               </div>
+              <p>(..........................................................)</p>
+              <p>ตำแหน่ง.................................................................</p>
+              <p>วันที่............./................./.................</p>
 
-              <div className="mt-0">
-                <p className="pl-4">- อนุมัติ</p>
-                <p className="pl-4">- รับทราบการเบิกจ่าย</p>
+              <p className="pl-4 mt-0">- อนุมัติ</p>
+              <p className="pl-4">- รับทราบการเบิกจ่าย</p>
+              <div className="flex items-end gap-1">
+                <span>(ลงชื่อ)</span>
+                <SignaturePad label="ผู้อนุมัติ" width={180} height={50} />
+                <span>(ผู้อนุมัติเบิกจ่าย)</span>
               </div>
+              <p>(..........................................................)</p>
 
-              <div className="sig-block mt-1 print:mt-0">
-                <div className="flex items-end gap-1">
-                  <span>(ลงชื่อ)</span>
-                  <SignaturePad label="ผู้อนุมัติ" width={180} height={50} />
-                  <span>(ผู้อนุมัติเบิกจ่าย)</span>
-                </div>
-                <p>(..........................................................)</p>
+              <p className="text-center font-bold mt-0">หัวหน้าหน่วยพัสดุ</p>
+              <div className="flex items-end gap-1">
+                <span>ลงชื่อ</span>
+                <SignaturePad label="หัวหน้าหน่วยพัสดุ" width={180} height={50} />
               </div>
-
-              <div className="sig-block mt-0">
-                <p className="text-center font-bold">หัวหน้าหน่วยพัสดุ</p>
-                <div className="flex items-end gap-1">
-                  <span>ลงชื่อ</span>
-                  <SignaturePad label="หัวหน้าหน่วยพัสดุ" width={180} height={50} />
-                </div>
-                <p>(..........................................................)</p>
-                <p>ตำแหน่ง.................................................................</p>
-                <p>วันที่............./................./.................</p>
-              </div>
+              <p>(..........................................................)</p>
+              <p>ตำแหน่ง.................................................................</p>
+              <p>วันที่............./................./.................</p>
             </div>
           </div>
         </div>

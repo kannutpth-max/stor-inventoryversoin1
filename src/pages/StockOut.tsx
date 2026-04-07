@@ -256,9 +256,8 @@ export default function StockOut() {
               margin-top: 2px !important;
               page-break-inside: avoid;
             }
-            #requisition-form .sig-section, #requisition-form .sig-section * {
-              font-size: 13pt !important;
-              line-height: 1.15 !important;
+            #requisition-form .sig-section {
+              display: none !important;
             }
             #requisition-form .sig-section p { margin: 0 !important; padding: 0 !important; }
             #requisition-form .sig-section .sig-block { margin-top: 0px !important; }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Plus, Trash2, PackageMinus, Calendar, Loader2, Printer, Save } from "lucide-react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import SignaturePad from "@/components/SignaturePad";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -262,7 +262,7 @@ export default function StockOut() {
             }
             #requisition-form .sig-section p { margin: 0 !important; padding: 0 !important; }
             #requisition-form .sig-section .sig-block { margin-top: 0px !important; }
-            #requisition-form canvas { max-height: 14px !important; }
+            
             #requisition-form .sig-section .checkbox-item {
               display: inline-flex; align-items: center; gap: 3px; margin: 0;
             }
@@ -445,11 +445,7 @@ export default function StockOut() {
               <p className="pl-4">- เพื่อเห็นชอบให้เบิกวัสดุเพื่อใช้ในงานราชการ ใน</p>
               <p>หน่วยงาน..................................................................</p>
               <p>&nbsp;</p>
-              <div className="flex items-end gap-1">
-                <span>ลงชื่อ</span>
-                <SignaturePad label="ผู้เขียนคำขอ" width={180} height={50} />
-                <span>ผู้เขียนคำขอ</span>
-              </div>
+              <p>ลงชื่อ...................................................ผู้เขียนคำขอ</p>
               <p>(.....................................................)  และ(ผู้รับวัสดุ)</p>
 
               <div className="flex gap-4 mt-0">
@@ -461,20 +457,13 @@ export default function StockOut() {
                 </label>
               </div>
               <p>&nbsp;</p>
-              <div className="flex items-end gap-1">
-                <span>(ลงชื่อ)</span>
-                <SignaturePad label="ผู้เบิก" width={180} height={50} />
-                <span>(ผู้เบิก)</span>
-              </div>
+              <p>(ลงชื่อ)...................................................(ผู้เบิก)</p>
               <p>(..........................................................)</p>
               <p>ตำแหน่ง.................................................................</p>
 
               <p className="text-center font-bold mt-0">หัวหน้ากลุ่มงาน / หน่วยงาน</p>
               <p>ลงชื่อ.........................................................</p>
-              <div className="flex items-end gap-1">
-                <span>ลงชื่อ</span>
-                <SignaturePad label="หัวหน้ากลุ่มงาน" width={180} height={50} />
-              </div>
+              <p>ลงชื่อ.........................................................</p>
               <p>(..........................................................)</p>
               <p>ตำแหน่ง.................................................................</p>
               <p>วันที่............./................./.................</p>
@@ -485,29 +474,18 @@ export default function StockOut() {
               <p className="font-bold">เรียน หัวหน้าหน่วยพัสดุ</p>
               <p className="pl-4">- เพื่ออนุมัติเบิกจ่ายวัสดุตามคำขอข้างต้น</p>
               <p className="text-center font-bold">ผู้จ่าย</p>
-              <div className="flex items-end gap-1">
-                <span>(ลงชื่อ)</span>
-                <SignaturePad label="ผู้จ่าย" width={180} height={50} />
-                <span>(ผู้จ่ายและลงทะเบียน)</span>
-              </div>
+              <p>(ลงชื่อ)...................................................(ผู้จ่ายและลงทะเบียน)</p>
               <p>(..........................................................)</p>
               <p>ตำแหน่ง.................................................................</p>
               <p>วันที่............./................./.................</p>
 
               <p className="pl-4 mt-0">- อนุมัติ</p>
               <p className="pl-4">- รับทราบการเบิกจ่าย</p>
-              <div className="flex items-end gap-1">
-                <span>(ลงชื่อ)</span>
-                <SignaturePad label="ผู้อนุมัติ" width={180} height={50} />
-                <span>(ผู้อนุมัติเบิกจ่าย)</span>
-              </div>
+              <p>(ลงชื่อ)...................................................(ผู้อนุมัติเบิกจ่าย)</p>
               <p>(..........................................................)</p>
 
               <p className="text-center font-bold mt-0">หัวหน้าหน่วยพัสดุ</p>
-              <div className="flex items-end gap-1">
-                <span>ลงชื่อ</span>
-                <SignaturePad label="หัวหน้าหน่วยพัสดุ" width={180} height={50} />
-              </div>
+              <p>ลงชื่อ.........................................................</p>
               <p>(..........................................................)</p>
               <p>ตำแหน่ง.................................................................</p>
               <p>วันที่............./................./.................</p>

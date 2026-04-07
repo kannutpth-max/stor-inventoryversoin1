@@ -269,7 +269,7 @@ export default function StockOut() {
               width: 10px; height: 10px; border: 1px solid #000; display: inline-block; flex-shrink: 0;
             }
             #requisition-form .sig-grid { gap: 8px !important; }
-            #requisition-form .receipt-no { font-size: 13pt !important; }
+            #requisition-form .receipt-no { font-size: 11pt !important; }
           }
         `}</style>
 

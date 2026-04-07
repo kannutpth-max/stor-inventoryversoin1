@@ -233,8 +233,8 @@ export default function StockOut() {
             #requisition-form {
               position: absolute; left: 0; top: 0; width: 100%;
               font-family: 'Sarabun', 'TH Sarabun New', sans-serif !important;
-              font-size: 13pt;
-              line-height: 1.15;
+            font-size: 11pt;
+            line-height: 1.1;
               color: #000 !important;
             }
             #requisition-form * {
@@ -242,23 +242,22 @@ export default function StockOut() {
               color: #000 !important;
             }
             .print\\:hidden { display: none !important; }
-            #requisition-form h1 { font-size: 18pt !important; margin: 0 !important; font-weight: 700 !important; }
-            #requisition-form .form-subtitle { font-size: 13pt !important; }
-            #requisition-form .form-info, #requisition-form .form-info * { font-size: 13pt !important; line-height: 1.2 !important; }
+            #requisition-form h1 { font-size: 16pt !important; margin: 0 !important; font-weight: 700 !important; }
+            #requisition-form .form-subtitle { font-size: 11pt !important; }
+            #requisition-form .form-info, #requisition-form .form-info * { font-size: 11pt !important; line-height: 1.15 !important; }
             #requisition-form table { border-collapse: collapse !important; }
             #requisition-form table td, #requisition-form table th {
               padding: 0px 3px !important;
-              font-size: 12pt !important;
-              line-height: 1.1 !important;
+              font-size: 10pt !important;
+              line-height: 1.05 !important;
               border-color: #000 !important;
             }
             #requisition-form .sig-section {
               margin-top: 2px !important;
               page-break-inside: avoid;
             }
-            #requisition-form .sig-section, #requisition-form .sig-section * {
-              font-size: 13pt !important;
-              line-height: 1.15 !important;
+            #requisition-form .sig-section {
+              display: none !important;
             }
             #requisition-form .sig-section p { margin: 0 !important; padding: 0 !important; }
             #requisition-form .sig-section .sig-block { margin-top: 0px !important; }
@@ -270,7 +269,7 @@ export default function StockOut() {
               width: 10px; height: 10px; border: 1px solid #000; display: inline-block; flex-shrink: 0;
             }
             #requisition-form .sig-grid { gap: 8px !important; }
-            #requisition-form .receipt-no { font-size: 13pt !important; }
+            #requisition-form .receipt-no { font-size: 11pt !important; }
           }
         `}</style>
 
@@ -293,10 +292,10 @@ export default function StockOut() {
             <Label className="whitespace-nowrap font-medium">ตำแหน่ง</Label>
             <Input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="ตำแหน่ง" className="h-8 text-sm flex-1 print:border-0 print:border-b print:border-dotted print:rounded-none print:border-black print:px-0" />
           </div>
-          <div className="flex items-center gap-2">
-            <Label className="whitespace-nowrap font-medium">หน่วยงานผู้เบิก (ฝ่าย/งาน)</Label>
+          <div className="flex items-center gap-2 flex-wrap print:flex-nowrap">
+            <Label className="whitespace-nowrap font-medium text-xs print:text-[11pt]">หน่วยงานผู้เบิก (ฝ่าย/งาน)</Label>
             <Select value={departmentId} onValueChange={setDepartmentId} disabled={isEditMode}>
-              <SelectTrigger className="h-8 text-sm flex-1 print:border-0 print:border-b print:border-dotted print:rounded-none print:border-black">
+              <SelectTrigger className="h-8 text-sm min-w-[200px] flex-1 print:border-0 print:border-b print:border-dotted print:rounded-none print:border-black print:min-w-0">
                 <SelectValue placeholder="เลือกหน่วยงาน" />
               </SelectTrigger>
               <SelectContent>

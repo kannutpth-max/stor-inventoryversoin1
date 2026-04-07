@@ -242,9 +242,9 @@ export default function StockOut() {
               color: #000 !important;
             }
             .print\\:hidden { display: none !important; }
-            #requisition-form h1 { font-size: 18pt !important; margin: 0 !important; font-weight: 700 !important; }
-            #requisition-form .form-subtitle { font-size: 13pt !important; }
-            #requisition-form .form-info, #requisition-form .form-info * { font-size: 13pt !important; line-height: 1.2 !important; }
+            #requisition-form h1 { font-size: 16pt !important; margin: 0 !important; font-weight: 700 !important; }
+            #requisition-form .form-subtitle { font-size: 11pt !important; }
+            #requisition-form .form-info, #requisition-form .form-info * { font-size: 11pt !important; line-height: 1.15 !important; }
             #requisition-form table { border-collapse: collapse !important; }
             #requisition-form table td, #requisition-form table th {
               padding: 0px 3px !important;

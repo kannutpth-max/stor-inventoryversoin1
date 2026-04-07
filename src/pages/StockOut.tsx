@@ -514,7 +514,6 @@ export default function StockOut() {
             </div>
           </div>
         </div>
-        </div>
       </div>
     </div>
   );

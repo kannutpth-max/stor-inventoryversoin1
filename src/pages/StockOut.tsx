@@ -248,8 +248,8 @@ export default function StockOut() {
             #requisition-form table { border-collapse: collapse !important; }
             #requisition-form table td, #requisition-form table th {
               padding: 0px 3px !important;
-              font-size: 12pt !important;
-              line-height: 1.1 !important;
+              font-size: 10pt !important;
+              line-height: 1.05 !important;
               border-color: #000 !important;
             }
             #requisition-form .sig-section {

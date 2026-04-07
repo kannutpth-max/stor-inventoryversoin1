@@ -233,8 +233,8 @@ export default function StockOut() {
             #requisition-form {
               position: absolute; left: 0; top: 0; width: 100%;
               font-family: 'Sarabun', 'TH Sarabun New', sans-serif !important;
-              font-size: 13pt;
-              line-height: 1.15;
+            font-size: 11pt;
+            line-height: 1.1;
               color: #000 !important;
             }
             #requisition-form * {

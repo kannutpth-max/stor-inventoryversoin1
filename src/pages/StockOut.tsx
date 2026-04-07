@@ -292,10 +292,10 @@ export default function StockOut() {
             <Label className="whitespace-nowrap font-medium">ตำแหน่ง</Label>
             <Input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="ตำแหน่ง" className="h-8 text-sm flex-1 print:border-0 print:border-b print:border-dotted print:rounded-none print:border-black print:px-0" />
           </div>
-          <div className="flex items-center gap-2">
-            <Label className="whitespace-nowrap font-medium">หน่วยงานผู้เบิก (ฝ่าย/งาน)</Label>
+          <div className="flex items-center gap-2 flex-wrap print:flex-nowrap">
+            <Label className="whitespace-nowrap font-medium text-xs print:text-[11pt]">หน่วยงานผู้เบิก (ฝ่าย/งาน)</Label>
             <Select value={departmentId} onValueChange={setDepartmentId} disabled={isEditMode}>
-              <SelectTrigger className="h-8 text-sm flex-1 print:border-0 print:border-b print:border-dotted print:rounded-none print:border-black">
+              <SelectTrigger className="h-8 text-sm min-w-[200px] flex-1 print:border-0 print:border-b print:border-dotted print:rounded-none print:border-black print:min-w-0">
                 <SelectValue placeholder="เลือกหน่วยงาน" />
               </SelectTrigger>
               <SelectContent>

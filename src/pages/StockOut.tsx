@@ -306,6 +306,30 @@ export default function StockOut() {
           </div>
         </div>
 
+        {/* Hidden date/withdraw fields for data binding - print:hidden */}
+        <div className="grid grid-cols-2 gap-x-8 gap-y-2 mb-2 text-sm form-info print:hidden">
+          <div className="flex items-center gap-2">
+            <Label className="whitespace-nowrap font-medium">วันที่:</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className={cn("flex-1 justify-start text-left font-normal h-8", !date && "text-muted-foreground")} disabled={isEditMode}>
+                  <Calendar className="mr-2 h-3 w-3" />
+                  {date ? format(date, "d MMMM yyyy", { locale: th }) : "เลือกวันที่"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <CalendarComponent mode="single" selected={date} onSelect={(d) => d && setDate(d)} initialFocus className="pointer-events-auto" />
+              </PopoverContent>
+            </Popover>
+          </div>
+          <div className="flex items-center gap-2">
+            <Label className="whitespace-nowrap font-medium">เลขที่:</Label>
+            <Input value={withdrawNo} onChange={(e) => setWithdrawNo(e.target.value)} placeholder="WD-XXXX" className="h-8 text-sm" disabled={isEditMode} />
+          </div>
+        </div>
+
+        <p className="text-sm mb-3 form-info print:hidden">มีความประสงค์ขอเบิกวัสดุที่ใช้ในราชการเพื่อจ่ายรายการดังต่อไปนี้</p>
+
         {/* Add item section - only in create mode */}
         {!isEditMode && (
           <div className="rounded-lg border p-3 bg-muted/30 mb-3 print:hidden">

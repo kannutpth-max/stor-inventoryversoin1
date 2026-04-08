@@ -225,53 +225,50 @@ export default function StockOut() {
       {/* Printable Form */}
       <div className="border border-border rounded-lg p-6 bg-background print:border-none print:rounded-none print:p-0 print:text-black" id="requisition-form">
         <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
-          @media print {
-            @page { size: A4; margin: 5mm 10mm; }
-            body * { visibility: hidden; }
-            #requisition-form, #requisition-form * { visibility: visible; }
-            #requisition-form {
-              position: absolute; left: 0; top: 0; width: 100%;
-              font-family: 'Sarabun', 'TH Sarabun New', sans-serif !important;
-            font-size: 11pt;
-            line-height: 1.1;
-              color: #000 !important;
-            }
-            #requisition-form * {
-              font-family: 'Sarabun', 'TH Sarabun New', sans-serif !important;
-              color: #000 !important;
-            }
-            .print\\:hidden { display: none !important; }
-            #requisition-form h1 { font-size: 16pt !important; margin: 0 !important; font-weight: 700 !important; }
-            #requisition-form .form-subtitle { font-size: 11pt !important; }
-            #requisition-form .form-info, #requisition-form .form-info * { font-size: 11pt !important; line-height: 1.15 !important; }
-            #requisition-form table { border-collapse: collapse !important; }
-            #requisition-form table td, #requisition-form table th {
-              padding: 0px 3px !important;
-              font-size: 10pt !important;
-              line-height: 1.05 !important;
-              border-color: #000 !important;
-            }
-            #requisition-form .sig-section {
-              margin-top: 2px !important;
-              page-break-inside: avoid;
-            }
-            #requisition-form .sig-section {
-              display: none !important;
-            }
-            #requisition-form .sig-section p { margin: 0 !important; padding: 0 !important; }
-            #requisition-form .sig-section .sig-block { margin-top: 0px !important; }
-            
-            #requisition-form .sig-section .checkbox-item {
-              display: inline-flex; align-items: center; gap: 3px; margin: 0;
-            }
-            #requisition-form .sig-section .checkbox-box {
-              width: 10px; height: 10px; border: 1px solid #000; display: inline-block; flex-shrink: 0;
-            }
-            #requisition-form .sig-grid { gap: 8px !important; }
-            #requisition-form .receipt-no { font-size: 11pt !important; }
-          }
-        `}</style>
+           @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
+           @media print {
+             @page { size: A4; margin: 5mm 10mm; }
+             body * { visibility: hidden; }
+             #requisition-form, #requisition-form * { visibility: visible; }
+             #requisition-form {
+               position: absolute; left: 0; top: 0; width: 100%;
+               font-family: 'Sarabun', 'TH Sarabun New', sans-serif !important;
+               font-size: 14pt;
+               line-height: 1.3;
+               color: #000 !important;
+             }
+             #requisition-form * {
+               font-family: 'Sarabun', 'TH Sarabun New', sans-serif !important;
+               color: #000 !important;
+             }
+             .print\\:hidden { display: none !important; }
+             #requisition-form h1 { font-size: 20pt !important; margin: 0 !important; font-weight: 700 !important; }
+             #requisition-form .form-subtitle { font-size: 14pt !important; }
+             #requisition-form .form-info, #requisition-form .form-info * { font-size: 14pt !important; line-height: 1.4 !important; }
+             #requisition-form table { border-collapse: collapse !important; }
+             #requisition-form table td, #requisition-form table th {
+               padding: 1px 4px !important;
+               font-size: 14pt !important;
+               line-height: 1.2 !important;
+               border-color: #000 !important;
+             }
+             #requisition-form .sig-section {
+               margin-top: 6px !important;
+               page-break-inside: avoid;
+               display: grid !important;
+               font-size: 14pt !important;
+             }
+             #requisition-form .sig-section p { margin: 0 !important; padding: 0 !important; line-height: 1.5 !important; }
+             #requisition-form .sig-section .checkbox-item {
+               display: inline-flex; align-items: center; gap: 3px; margin: 0;
+             }
+             #requisition-form .sig-section .checkbox-box {
+               width: 12px; height: 12px; border: 1px solid #000; display: inline-block; flex-shrink: 0;
+             }
+             #requisition-form .sig-grid { gap: 16px !important; }
+             #requisition-form .receipt-no { font-size: 14pt !important; }
+           }
+         `}</style>
 
         {/* Header */}
         <div className="relative mb-1 print:mb-0">

@@ -284,11 +284,13 @@ export default function StockOut() {
             <Label className="whitespace-nowrap font-medium">เรียน ผู้อำนวยการโรงพยาบาลประชาธิปัตย์</Label>
           </div>
           <div className="flex items-center gap-2">
-            <Label className="whitespace-nowrap font-medium print:after:content-['..................................................................................................'] print:after:tracking-wider">ข้าพเจ้า</Label>
+            <Label className="whitespace-nowrap font-medium print:hidden">ข้าพเจ้า</Label>
             <Input value={requester} onChange={(e) => setRequester(e.target.value)} placeholder="ชื่อผู้เบิก" className="h-8 text-sm flex-1 print:hidden" />
-            <span className="hidden print:inline">ข้าพเจ้า......................................................................ตำแหน่ง......................................................................</span>
             <Label className="whitespace-nowrap font-medium print:hidden">ตำแหน่ง</Label>
             <Input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="ตำแหน่ง" className="h-8 text-sm flex-1 print:hidden" />
+          </div>
+          <div className="hidden print:block form-info">
+            <p>ข้าพเจ้า......................................................................ตำแหน่ง......................................................................</p>
           </div>
           <div className="hidden print:block form-info">
             <p>หน่วยงานผู้เบิก (ฝ่าย/งาน)..............................................................................................................มีความประสงค์จะขอเบิกวัสดุเพื่อใช้ในราชการดังรายการต่อไปนี้</p>

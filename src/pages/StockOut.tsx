@@ -225,53 +225,50 @@ export default function StockOut() {
       {/* Printable Form */}
       <div className="border border-border rounded-lg p-6 bg-background print:border-none print:rounded-none print:p-0 print:text-black" id="requisition-form">
         <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
-          @media print {
-            @page { size: A4; margin: 5mm 10mm; }
-            body * { visibility: hidden; }
-            #requisition-form, #requisition-form * { visibility: visible; }
-            #requisition-form {
-              position: absolute; left: 0; top: 0; width: 100%;
-              font-family: 'Sarabun', 'TH Sarabun New', sans-serif !important;
-            font-size: 11pt;
-            line-height: 1.1;
-              color: #000 !important;
-            }
-            #requisition-form * {
-              font-family: 'Sarabun', 'TH Sarabun New', sans-serif !important;
-              color: #000 !important;
-            }
-            .print\\:hidden { display: none !important; }
-            #requisition-form h1 { font-size: 16pt !important; margin: 0 !important; font-weight: 700 !important; }
-            #requisition-form .form-subtitle { font-size: 11pt !important; }
-            #requisition-form .form-info, #requisition-form .form-info * { font-size: 11pt !important; line-height: 1.15 !important; }
-            #requisition-form table { border-collapse: collapse !important; }
-            #requisition-form table td, #requisition-form table th {
-              padding: 0px 3px !important;
-              font-size: 10pt !important;
-              line-height: 1.05 !important;
-              border-color: #000 !important;
-            }
-            #requisition-form .sig-section {
-              margin-top: 2px !important;
-              page-break-inside: avoid;
-            }
-            #requisition-form .sig-section {
-              display: none !important;
-            }
-            #requisition-form .sig-section p { margin: 0 !important; padding: 0 !important; }
-            #requisition-form .sig-section .sig-block { margin-top: 0px !important; }
-            
-            #requisition-form .sig-section .checkbox-item {
-              display: inline-flex; align-items: center; gap: 3px; margin: 0;
-            }
-            #requisition-form .sig-section .checkbox-box {
-              width: 10px; height: 10px; border: 1px solid #000; display: inline-block; flex-shrink: 0;
-            }
-            #requisition-form .sig-grid { gap: 8px !important; }
-            #requisition-form .receipt-no { font-size: 11pt !important; }
-          }
-        `}</style>
+           @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
+           @media print {
+             @page { size: A4; margin: 5mm 10mm; }
+             body * { visibility: hidden; }
+             #requisition-form, #requisition-form * { visibility: visible; }
+             #requisition-form {
+               position: absolute; left: 0; top: 0; width: 100%;
+               font-family: 'Sarabun', 'TH Sarabun New', sans-serif !important;
+               font-size: 14pt;
+               line-height: 1.3;
+               color: #000 !important;
+             }
+             #requisition-form * {
+               font-family: 'Sarabun', 'TH Sarabun New', sans-serif !important;
+               color: #000 !important;
+             }
+             .print\\:hidden { display: none !important; }
+             #requisition-form h1 { font-size: 20pt !important; margin: 0 !important; font-weight: 700 !important; }
+             #requisition-form .form-subtitle { font-size: 14pt !important; }
+             #requisition-form .form-info, #requisition-form .form-info * { font-size: 14pt !important; line-height: 1.4 !important; }
+             #requisition-form table { border-collapse: collapse !important; }
+             #requisition-form table td, #requisition-form table th {
+               padding: 1px 4px !important;
+               font-size: 14pt !important;
+               line-height: 1.2 !important;
+               border-color: #000 !important;
+             }
+             #requisition-form .sig-section {
+               margin-top: 6px !important;
+               page-break-inside: avoid;
+               display: grid !important;
+               font-size: 14pt !important;
+             }
+             #requisition-form .sig-section p { margin: 0 !important; padding: 0 !important; line-height: 1.5 !important; }
+             #requisition-form .sig-section .checkbox-item {
+               display: inline-flex; align-items: center; gap: 3px; margin: 0;
+             }
+             #requisition-form .sig-section .checkbox-box {
+               width: 12px; height: 12px; border: 1px solid #000; display: inline-block; flex-shrink: 0;
+             }
+             #requisition-form .sig-grid { gap: 16px !important; }
+             #requisition-form .receipt-no { font-size: 14pt !important; }
+           }
+         `}</style>
 
         {/* Header */}
         <div className="relative mb-1 print:mb-0">
@@ -287,22 +284,27 @@ export default function StockOut() {
             <Label className="whitespace-nowrap font-medium">เรียน ผู้อำนวยการโรงพยาบาลประชาธิปัตย์</Label>
           </div>
           <div className="flex items-center gap-2">
-            <Label className="whitespace-nowrap font-medium">ข้าพเจ้า</Label>
-            <Input value={requester} onChange={(e) => setRequester(e.target.value)} placeholder="ชื่อผู้เบิก" className="h-8 text-sm flex-1 print:border-0 print:border-b print:border-dotted print:rounded-none print:border-black print:px-0" />
-            <Label className="whitespace-nowrap font-medium">ตำแหน่ง</Label>
-            <Input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="ตำแหน่ง" className="h-8 text-sm flex-1 print:border-0 print:border-b print:border-dotted print:rounded-none print:border-black print:px-0" />
+            <Label className="whitespace-nowrap font-medium print:hidden">ข้าพเจ้า</Label>
+            <Input value={requester} onChange={(e) => setRequester(e.target.value)} placeholder="ชื่อผู้เบิก" className="h-8 text-sm flex-1 print:hidden" />
+            <Label className="whitespace-nowrap font-medium print:hidden">ตำแหน่ง</Label>
+            <Input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="ตำแหน่ง" className="h-8 text-sm flex-1 print:hidden" />
           </div>
-          <div className="flex items-center gap-2 flex-wrap print:flex-nowrap">
-            <Label className="whitespace-nowrap font-medium text-xs print:text-[11pt]">หน่วยงานผู้เบิก (ฝ่าย/งาน)</Label>
+          <div className="hidden print:block form-info">
+            <p>ข้าพเจ้า......................................................................ตำแหน่ง......................................................................</p>
+          </div>
+          <div className="hidden print:block form-info">
+            <p>หน่วยงานผู้เบิก (ฝ่าย/งาน)..............................................................................................................มีความประสงค์จะขอเบิกวัสดุเพื่อใช้ในราชการดังรายการต่อไปนี้</p>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap print:hidden">
+            <Label className="whitespace-nowrap font-medium text-xs">หน่วยงานผู้เบิก (ฝ่าย/งาน)</Label>
             <Select value={departmentId} onValueChange={setDepartmentId} disabled={isEditMode}>
-              <SelectTrigger className="h-8 text-sm min-w-[200px] flex-1 print:border-0 print:border-b print:border-dotted print:rounded-none print:border-black print:min-w-0">
+              <SelectTrigger className="h-8 text-sm min-w-[200px] flex-1">
                 <SelectValue placeholder="เลือกหน่วยงาน" />
               </SelectTrigger>
               <SelectContent>
                 {departments.map((d) => (<SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>))}
               </SelectContent>
             </Select>
-            <span className="print:inline hidden">มีความประสงค์จะขอเบิกวัสดุเพื่อใช้ในราชการดังรายการต่อไปนี้</span>
           </div>
         </div>
 
@@ -328,7 +330,6 @@ export default function StockOut() {
           </div>
         </div>
 
-        <p className="text-sm mb-3 print:mb-0 form-info print:block hidden">มีความประสงค์จะขอเบิกวัสดุเพื่อใช้ในราชการดังรายการต่อไปนี้</p>
         <p className="text-sm mb-3 form-info print:hidden">มีความประสงค์ขอเบิกวัสดุที่ใช้ในราชการเพื่อจ่ายรายการดังต่อไปนี้</p>
 
         {/* Add item section - only in create mode */}
@@ -436,16 +437,16 @@ export default function StockOut() {
         </div>
 
         {/* Signature Section */}
-        <div className="mt-3 print:mt-0 text-xs sig-section">
-          <div className="grid grid-cols-2 gap-6 print:gap-2 sig-grid">
+        <div className="mt-3 print:mt-1 text-xs sig-section">
+          <div className="grid grid-cols-2 gap-6 print:gap-4 sig-grid">
             {/* Left Column */}
             <div className="space-y-0">
               <p className="font-bold">เรียน หัวหน้ากลุ่มงาน / หน่วยงาน</p>
               <p className="pl-4">- เพื่อเห็นชอบให้เบิกวัสดุเพื่อใช้ในงานราชการ ใน</p>
-              <p>หน่วยงาน.................................</p>
+              <p>หน่วยงาน.................................................................</p>
               <p>&nbsp;</p>
-              <p>ลงชื่อ.............................ผู้เขียนคำขอ</p>
-              <p>(..........................) และ(ผู้รับวัสดุ)</p>
+              <p>ลงชื่อ..............................................ผู้เขียนคำขอ</p>
+              <p>(.............................................) และ(ผู้รับวัสดุ)</p>
 
               <div className="flex gap-4 mt-0">
                 <label className="flex items-center gap-1 checkbox-item">
@@ -456,37 +457,30 @@ export default function StockOut() {
                 </label>
               </div>
               <p>&nbsp;</p>
-              <p>(ลงชื่อ)..............................(ผู้เบิก)</p>
-              <p>(..................................)</p>
-              <p>ตำแหน่ง.................................</p>
-
-              <p className="text-center font-bold mt-0">หัวหน้ากลุ่มงาน / หน่วยงาน</p>
-              <p>ลงชื่อ..................................</p>
-              <p>(..................................)</p>
-              <p>ตำแหน่ง.................................</p>
-              <p>วันที่........../............/............</p>
+              <p>(ลงชื่อ)................................................................(ผู้เบิก)</p>
+              <p>(..................................................................)</p>
+              <p>ตำแหน่ง.................................................................</p>
+              <p>หัวหน้ากลุ่มงาน / หน่วยงาน.............................................</p>
+              <p>วันที่............../................../..................</p>
             </div>
 
             {/* Right Column */}
             <div className="space-y-0">
               <p className="font-bold">เรียน หัวหน้าหน่วยพัสดุ</p>
               <p className="pl-4">- เพื่ออนุมัติเบิกจ่ายวัสดุตามคำขอข้างต้น</p>
-              <p className="text-center font-bold">ผู้จ่าย</p>
-              <p>(ลงชื่อ)..................(ผู้จ่ายและลงทะเบียน)</p>
-              <p>(..................................)</p>
-              <p>ตำแหน่ง.................................</p>
-              <p>วันที่........../............/............</p>
+              <p>&nbsp;</p>
+              <p>(ลงชื่อ)...........................................(ผู้จ่ายและลงทะเบียน)</p>
+              <p>( นางสาวกัญญารัตน์ สวัสดิ )</p>
+              <p>ตำแหน่ง นักวิชาการพัสดุ</p>
+              <p>วันที่............../................../..................</p>
 
               <p className="pl-4 mt-0">- อนุมัติ</p>
               <p className="pl-4">- รับทราบการเบิกจ่าย</p>
-              <p>(ลงชื่อ)..................(ผู้อนุมัติเบิกจ่าย)</p>
-              <p>(..................................)</p>
-
-              <p className="text-center font-bold mt-0">หัวหน้าหน่วยพัสดุ</p>
-              <p>ลงชื่อ..................................</p>
-              <p>(..................................)</p>
-              <p>ตำแหน่ง.................................</p>
-              <p>วันที่........../............/............</p>
+              <p>&nbsp;</p>
+              <p>(ลงชื่อ)...........................................(ผู้อนุมัติเบิกจ่าย)</p>
+              <p>( นายไพศาล น้อยเกิด ) หัวหน้าหน่วยพัสดุ</p>
+              <p>ตำแหน่ง เจ้าพนักงานธุรการชำนาญงาน</p>
+              <p>วันที่............../................../..................</p>
             </div>
           </div>
         </div>

@@ -284,49 +284,27 @@ export default function StockOut() {
             <Label className="whitespace-nowrap font-medium">เรียน ผู้อำนวยการโรงพยาบาลประชาธิปัตย์</Label>
           </div>
           <div className="flex items-center gap-2">
-            <Label className="whitespace-nowrap font-medium">ข้าพเจ้า</Label>
-            <Input value={requester} onChange={(e) => setRequester(e.target.value)} placeholder="ชื่อผู้เบิก" className="h-8 text-sm flex-1 print:border-0 print:border-b print:border-dotted print:rounded-none print:border-black print:px-0" />
-            <Label className="whitespace-nowrap font-medium">ตำแหน่ง</Label>
-            <Input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="ตำแหน่ง" className="h-8 text-sm flex-1 print:border-0 print:border-b print:border-dotted print:rounded-none print:border-black print:px-0" />
+            <Label className="whitespace-nowrap font-medium print:after:content-['..................................................................................................'] print:after:tracking-wider">ข้าพเจ้า</Label>
+            <Input value={requester} onChange={(e) => setRequester(e.target.value)} placeholder="ชื่อผู้เบิก" className="h-8 text-sm flex-1 print:hidden" />
+            <span className="hidden print:inline">ข้าพเจ้า......................................................................ตำแหน่ง......................................................................</span>
+            <Label className="whitespace-nowrap font-medium print:hidden">ตำแหน่ง</Label>
+            <Input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="ตำแหน่ง" className="h-8 text-sm flex-1 print:hidden" />
           </div>
-          <div className="flex items-center gap-2 flex-wrap print:flex-nowrap">
-            <Label className="whitespace-nowrap font-medium text-xs print:text-[11pt]">หน่วยงานผู้เบิก (ฝ่าย/งาน)</Label>
+          <div className="hidden print:block form-info">
+            <p>หน่วยงานผู้เบิก (ฝ่าย/งาน)..............................................................................................................มีความประสงค์จะขอเบิกวัสดุเพื่อใช้ในราชการดังรายการต่อไปนี้</p>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap print:hidden">
+            <Label className="whitespace-nowrap font-medium text-xs">หน่วยงานผู้เบิก (ฝ่าย/งาน)</Label>
             <Select value={departmentId} onValueChange={setDepartmentId} disabled={isEditMode}>
-              <SelectTrigger className="h-8 text-sm min-w-[200px] flex-1 print:border-0 print:border-b print:border-dotted print:rounded-none print:border-black print:min-w-0">
+              <SelectTrigger className="h-8 text-sm min-w-[200px] flex-1">
                 <SelectValue placeholder="เลือกหน่วยงาน" />
               </SelectTrigger>
               <SelectContent>
                 {departments.map((d) => (<SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>))}
               </SelectContent>
             </Select>
-            <span className="print:inline hidden">มีความประสงค์จะขอเบิกวัสดุเพื่อใช้ในราชการดังรายการต่อไปนี้</span>
           </div>
         </div>
-
-        {/* Hidden date/withdraw fields for data binding - print:hidden */}
-        <div className="grid grid-cols-2 gap-x-8 gap-y-2 mb-2 text-sm form-info print:hidden">
-          <div className="flex items-center gap-2">
-            <Label className="whitespace-nowrap font-medium">วันที่:</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className={cn("flex-1 justify-start text-left font-normal h-8", !date && "text-muted-foreground")} disabled={isEditMode}>
-                  <Calendar className="mr-2 h-3 w-3" />
-                  {date ? format(date, "d MMMM yyyy", { locale: th }) : "เลือกวันที่"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <CalendarComponent mode="single" selected={date} onSelect={(d) => d && setDate(d)} initialFocus className="pointer-events-auto" />
-              </PopoverContent>
-            </Popover>
-          </div>
-          <div className="flex items-center gap-2">
-            <Label className="whitespace-nowrap font-medium">เลขที่:</Label>
-            <Input value={withdrawNo} onChange={(e) => setWithdrawNo(e.target.value)} placeholder="WD-XXXX" className="h-8 text-sm" disabled={isEditMode} />
-          </div>
-        </div>
-
-        <p className="text-sm mb-3 print:mb-0 form-info print:block hidden">มีความประสงค์จะขอเบิกวัสดุเพื่อใช้ในราชการดังรายการต่อไปนี้</p>
-        <p className="text-sm mb-3 form-info print:hidden">มีความประสงค์ขอเบิกวัสดุที่ใช้ในราชการเพื่อจ่ายรายการดังต่อไปนี้</p>
 
         {/* Add item section - only in create mode */}
         {!isEditMode && (

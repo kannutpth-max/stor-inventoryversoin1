@@ -252,7 +252,7 @@ export default function StockOut() {
              #requisition-form .form-info, #requisition-form .form-info * { font-size: 11pt !important; line-height: 1.2 !important; }
              #requisition-form table { border-collapse: collapse !important; }
              #requisition-form table td, #requisition-form table th {
-               padding: 0px 3px !important;
+               padding: 2px 3px !important;
                font-size: 11pt !important;
                line-height: 1.1 !important;
                border-color: #000 !important;

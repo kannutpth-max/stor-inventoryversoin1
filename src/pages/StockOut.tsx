@@ -234,17 +234,20 @@ export default function StockOut() {
                position: absolute; left: 0; top: 0; width: 100%;
                font-family: 'Sarabun', 'TH Sarabun New', sans-serif !important;
                 font-size: 11pt;
-                font-weight: 300 !important;
-                line-height: 1.15;
-                color: #000 !important;
-              }
-              #requisition-form * {
-                font-family: 'Sarabun', 'TH Sarabun New', sans-serif !important;
-                font-weight: 300 !important;
-                color: #000 !important;
+                 font-weight: 200 !important;
+                 line-height: 1.15;
+                 color: #555 !important;
+               }
+               #requisition-form * {
+                 font-family: 'Sarabun', 'TH Sarabun New', sans-serif !important;
+                 font-weight: 200 !important;
+                 color: #555 !important;
               }
              .print\\:hidden { display: none !important; }
-             #requisition-form h1 { font-size: 16pt !important; margin: 0 !important; font-weight: 500 !important; }
+             #requisition-form h1 { font-size: 16pt !important; margin: 0 !important; font-weight: 400 !important; color: #333 !important; }
+             #requisition-form .font-bold { font-weight: 400 !important; color: #333 !important; }
+             #requisition-form table th { font-weight: 300 !important; color: #444 !important; }
+             #requisition-form table td, #requisition-form table th { border-color: #888 !important; }
              #requisition-form .form-subtitle { font-size: 11pt !important; }
              #requisition-form .form-info, #requisition-form .form-info * { font-size: 11pt !important; line-height: 1.2 !important; }
              #requisition-form table { border-collapse: collapse !important; }
@@ -447,10 +450,10 @@ export default function StockOut() {
               <p className="pl-4">- เพื่อเห็นชอบให้เบิกวัสดุเพื่อใช้ในงานราชการ ใน</p>
               <p>หน่วยงาน.................................................................</p>
               <p>&nbsp;</p>
-              <p>ลงชื่อ..............................................ผู้เขียนคำขอ</p>
-              <p>(.............................................) และ(ผู้รับวัสดุ)</p>
+              <p className="text-center">ลงชื่อ..............................................ผู้เขียนคำขอ</p>
+              <p className="text-center">(.............................................) และ(ผู้รับวัสดุ)</p>
 
-              <div className="flex gap-4 mt-0">
+              <div className="flex justify-center gap-4 mt-0">
                 <label className="flex items-center gap-1 checkbox-item">
                   <span className="inline-block w-3 h-3 border border-current print:border-black checkbox-box"></span> เห็นชอบ
                 </label>
@@ -459,11 +462,11 @@ export default function StockOut() {
                 </label>
               </div>
               <p>&nbsp;</p>
-              <p>(ลงชื่อ)................................................................(ผู้เบิก)</p>
-              <p>(..................................................................)</p>
-              <p>ตำแหน่ง.................................................................</p>
-              <p>หัวหน้ากลุ่มงาน / หน่วยงาน.............................................</p>
-              <p>วันที่............../................../..................</p>
+              <p className="text-center">(ลงชื่อ)................................................................(ผู้เบิก)</p>
+              <p className="text-center">(..................................................................)</p>
+              <p className="text-center">ตำแหน่ง.................................................................</p>
+              <p className="text-center">หัวหน้ากลุ่มงาน / หน่วยงาน.............................................</p>
+              <p className="text-center">วันที่............../................../..................</p>
             </div>
 
             {/* Right Column */}
@@ -471,18 +474,18 @@ export default function StockOut() {
               <p className="font-bold">เรียน หัวหน้าหน่วยพัสดุ</p>
               <p className="pl-4">- เพื่ออนุมัติเบิกจ่ายวัสดุตามคำขอข้างต้น</p>
               <p>&nbsp;</p>
-              <p>(ลงชื่อ)...........................................(ผู้จ่ายและลงทะเบียน)</p>
-              <p>( นางสาวกัญญารัตน์ สวัสดิ )</p>
-              <p>ตำแหน่ง นักวิชาการพัสดุ</p>
-              <p>วันที่............../................../..................</p>
+              <p className="text-center">(ลงชื่อ)...........................................(ผู้จ่ายและลงทะเบียน)</p>
+              <p className="text-center">( นางสาวกัญญารัตน์ สวัสดิ )</p>
+              <p className="text-center">ตำแหน่ง นักวิชาการพัสดุ</p>
+              <p className="text-center">วันที่............../................../..................</p>
 
               <p className="pl-4 mt-0">- อนุมัติ</p>
               <p className="pl-4">- รับทราบการเบิกจ่าย</p>
               <p>&nbsp;</p>
-              <p>(ลงชื่อ)...........................................(ผู้อนุมัติเบิกจ่าย)</p>
-              <p>( นายไพศาล น้อยเกิด ) หัวหน้าหน่วยพัสดุ</p>
-              <p>ตำแหน่ง เจ้าพนักงานธุรการชำนาญงาน</p>
-              <p>วันที่............../................../..................</p>
+              <p className="text-center">(ลงชื่อ)...........................................(ผู้อนุมัติเบิกจ่าย)</p>
+              <p className="text-center">( นายไพศาล น้อยเกิด ) หัวหน้าหน่วยพัสดุ</p>
+              <p className="text-center">ตำแหน่ง เจ้าพนักงานธุรการชำนาญงาน</p>
+              <p className="text-center">วันที่............../................../..................</p>
             </div>
           </div>
         </div>

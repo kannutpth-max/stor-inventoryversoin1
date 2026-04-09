@@ -233,14 +233,16 @@ export default function StockOut() {
              #requisition-form {
                position: absolute; left: 0; top: 0; width: 100%;
                font-family: 'Sarabun', 'TH Sarabun New', sans-serif !important;
-               font-size: 11pt;
-               line-height: 1.15;
-               color: #000 !important;
-             }
-             #requisition-form * {
-               font-family: 'Sarabun', 'TH Sarabun New', sans-serif !important;
-               color: #000 !important;
-             }
+                font-size: 11pt;
+                font-weight: 300 !important;
+                line-height: 1.15;
+                color: #000 !important;
+              }
+              #requisition-form * {
+                font-family: 'Sarabun', 'TH Sarabun New', sans-serif !important;
+                font-weight: 300 !important;
+                color: #000 !important;
+              }
              .print\\:hidden { display: none !important; }
              #requisition-form h1 { font-size: 16pt !important; margin: 0 !important; font-weight: 700 !important; }
              #requisition-form .form-subtitle { font-size: 11pt !important; }

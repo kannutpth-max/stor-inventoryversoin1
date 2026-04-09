@@ -277,10 +277,10 @@ export default function StockOut() {
 
         {/* Header */}
         <div className="relative mb-1 print:mb-0">
-          <p className="text-sm text-muted-foreground print:text-black text-right receipt-no">เลขที่เบิก<span className="hidden print:inline print:underline print:mx-1">{withdrawNo || '.....................'}</span><span className="print:hidden">.....................</span></p>
+          <p className="text-sm text-muted-foreground print:text-black text-right receipt-no">เลขที่เบิก<span className="hidden print:inline print:mx-1">..........{withdrawNo || ''}...........</span><span className="print:hidden">.....................</span></p>
           <h1 className="text-lg font-bold text-center print:text-[20pt]">ใบเบิกวัสดุสำนักงาน / งานบ้านงานครัว</h1>
           <p className="text-sm text-muted-foreground print:text-black text-right form-subtitle">โรงพยาบาลประชาธิปัตย์</p>
-          <p className="text-sm text-muted-foreground print:text-black text-right form-info">วันที่<span className="hidden print:inline print:underline print:mx-1">{date ? format(date, "d") : '......'}</span><span className="print:hidden">......</span>/<span className="hidden print:inline print:underline print:mx-1">{date ? format(date, "MMMM", { locale: th }) : '............'}</span><span className="print:hidden">............</span>/<span className="hidden print:inline print:underline print:mx-1">{date ? (date.getFullYear() + 543).toString() : '............'}</span><span className="print:hidden">............</span></p>
+          <p className="text-sm text-muted-foreground print:text-black text-right form-info">วันที่<span className="hidden print:inline print:mx-1">{date ? `...${format(date, "d")}...` : '......'}</span><span className="print:hidden">......</span>/<span className="hidden print:inline print:mx-1">{date ? `...${format(date, "MMMM", { locale: th })}...` : '............'}</span><span className="print:hidden">............</span>/<span className="hidden print:inline print:mx-1">{date ? `...${(date.getFullYear() + 543).toString()}...` : '............'}</span><span className="print:hidden">............</span></p>
         </div>
 
         {/* Form Info */}
@@ -295,10 +295,10 @@ export default function StockOut() {
             <Input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="ตำแหน่ง" className="h-8 text-sm flex-1 print:hidden" />
           </div>
           <div className="hidden print:block form-info">
-            <p>ข้าพเจ้า<span className={requester ? "underline mx-1" : "mx-1"}>{requester || '......................................................................'}</span>ตำแหน่ง<span className={position ? "underline mx-1" : "mx-1"}>{position || '......................................................................'}</span></p>
+            <p>ข้าพเจ้า<span className="mx-1">{requester ? `...${requester}...` : '......................................................................'}</span>ตำแหน่ง<span className="mx-1">{position ? `...${position}...` : '......................................................................'}</span></p>
           </div>
           <div className="hidden print:block form-info">
-            <p>หน่วยงานผู้เบิก (ฝ่าย/งาน)<span className={getDepartmentName(departmentId) ? "underline mx-1" : "mx-1"}>{getDepartmentName(departmentId) || '...........................................................................................................'}</span>มีความประสงค์จะขอเบิกวัสดุเพื่อใช้ในราชการดังรายการต่อไปนี้</p>
+            <p>หน่วยงานผู้เบิก (ฝ่าย/งาน)<span className="mx-1">{getDepartmentName(departmentId) ? `...${getDepartmentName(departmentId)}...` : '...........................................................................................................'}</span>มีความประสงค์จะขอเบิกวัสดุเพื่อใช้ในราชการดังรายการต่อไปนี้</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap print:hidden">
             <Label className="whitespace-nowrap font-medium text-xs">หน่วยงานผู้เบิก (ฝ่าย/งาน)</Label>

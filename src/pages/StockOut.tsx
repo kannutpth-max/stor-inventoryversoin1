@@ -292,6 +292,9 @@ export default function StockOut() {
                 border-bottom: 1px dotted #555;
                 padding: 0 4px;
                 margin: 0 2px;
+                display: inline-block;
+                min-width: 40px;
+                line-height: 1.1;
               }
             }
          `}</style>

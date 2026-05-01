@@ -301,7 +301,7 @@ export default function StockOut() {
 
         {/* Header */}
         <div className="relative mb-1 print:mb-0">
-          <p className="text-sm text-muted-foreground print:text-black text-right receipt-no">เลขที่เบิก<span className="dotted-underline">{withdrawNo || '.......................................................'}</span></p>
+          <p className="text-sm text-muted-foreground print:text-black text-right receipt-no">เลขที่เบิก<span className="dotted-underline" style={{ minWidth: '180px' }}>{withdrawNo || '\u00A0'}</span></p>
           <h1 className="text-lg font-bold text-center print:text-[20pt]">ใบเบิกวัสดุสำนักงาน / งานบ้านงานครัว</h1>
           <p className="text-sm text-muted-foreground print:text-black text-right form-subtitle">โรงพยาบาลประชาธิปัตย์</p>
           <p className="text-sm text-muted-foreground print:text-black text-right form-info">วันที่<span className="dotted-underline">{date ? format(date, "d") : '............'}</span>เดือน<span className="dotted-underline">{date ? format(date, "MMMM", { locale: th }) : '..............................'}</span>พ.ศ.<span className="dotted-underline">{date ? (date.getFullYear() + 543).toString() : '............'}</span></p>

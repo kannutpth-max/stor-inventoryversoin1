@@ -68,14 +68,31 @@ async function getAccessToken(credentials: ServiceAccountCredentials): Promise<s
 
 const SHEETS_API = "https://sheets.googleapis.com/v4/spreadsheets";
 
-async function getSheetData(accessToken: string, sheetId: string, sheetName: string) {
-  const res = await fetch(`${SHEETS_API}/${sheetId}/values/${encodeURIComponent(sheetName)}`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-  if (!res.ok) {
+async function fetchWithRetry(url: string, init: RequestInit, label: string, maxAttempts = 4): Promise<Response> {
+  let lastErr = "";
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const res = await fetch(url, init);
+    if (res.ok) return res;
+    // Retry on transient errors
+    if ([429, 500, 502, 503, 504].includes(res.status) && attempt < maxAttempts) {
+      lastErr = await res.text();
+      const delay = Math.min(2000, 300 * Math.pow(2, attempt - 1));
+      console.log(`Retrying ${label} (attempt ${attempt}, status ${res.status}) after ${delay}ms`);
+      await new Promise((r) => setTimeout(r, delay));
+      continue;
+    }
     const err = await res.text();
-    throw new Error(`Failed to read sheet ${sheetName}: ${err}`);
+    throw new Error(`Failed to ${label}: ${err}`);
   }
+  throw new Error(`Failed to ${label} after ${maxAttempts} attempts: ${lastErr}`);
+}
+
+async function getSheetData(accessToken: string, sheetId: string, sheetName: string) {
+  const res = await fetchWithRetry(
+    `${SHEETS_API}/${sheetId}/values/${encodeURIComponent(sheetName)}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+    `read sheet ${sheetName}`,
+  );
   const data = await res.json();
   const rows = data.values || [];
   if (rows.length === 0) return [];

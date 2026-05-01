@@ -84,7 +84,7 @@ export default function ReportPreview({ reportType, dateFrom, dateTo, productFro
     case "monthly":
       return <DailyMonthlyReport stockIn={filteredStockIn} stockOut={filteredStockOut} getProductName={getProductName} getProductUnit={getProductUnit} getCompanyName={getCompanyName} getDepartmentName={getDepartmentName} />;
     case "stock-balance":
-      return <StockBalanceReport products={filteredProducts} getCategoryName={getCategoryName} getUnitName={(pid) => getProductUnit(pid)} />;
+      return <StockBalanceReport products={filteredProducts} stockIn={filteredStockIn} stockOut={filteredStockOut} getProductUnit={getProductUnit} dateFrom={dateFrom} dateTo={dateTo} />;
     case "stock-card":
       return <StockCardReport products={filteredProducts} stockIn={filteredStockIn} stockOut={filteredStockOut} getProductUnit={getProductUnit} getCompanyName={getCompanyName} getDepartmentName={getDepartmentName} getCategoryName={getCategoryName} dateFrom={dateFrom} />;
     case "product-movement":
@@ -177,46 +177,167 @@ function DailyMonthlyReport({ stockIn, stockOut, getProductName, getProductUnit,
   );
 }
 
-function StockBalanceReport({ products, getCategoryName, getUnitName }: {
-  products: Product[]; getCategoryName: (id: string) => string; getUnitName: (pid: string) => string;
+// Helper: aggregate stock-balance per product
+export function computeStockBalanceRows(
+  products: Product[],
+  stockIn: StockInRecord[],
+  stockOut: StockOutRecord[],
+  getProductUnit: (id: string) => string,
+) {
+  return products.map((p, idx) => {
+    const price = parseFloat(p.price) || 0;
+    const pIn = stockIn.filter(r => r.product_id === p.id);
+    const pOut = stockOut.filter(r => r.product_id === p.id);
+    const inQty = pIn.reduce((s, r) => s + (parseInt(r.quantity) || 0), 0);
+    const outQty = pOut.reduce((s, r) => s + (parseInt(r.quantity) || 0), 0);
+    const currentStock = parseInt(p.stock) || 0;
+    const opening = currentStock - inQty + outQty;
+    const closing = opening + inQty - outQty;
+    return {
+      seq: idx + 1,
+      id: p.id,
+      name: p.name,
+      unit: getProductUnit(p.id),
+      opening,
+      price,
+      openingValue: opening * price,
+      inPrice: price,
+      inQty,
+      inValue: inQty * price,
+      outPrice: price,
+      outQty,
+      outValue: outQty * price,
+      closing,
+      closingValue: closing * price,
+    };
+  });
+}
+
+function StockBalanceReport({ products, stockIn, stockOut, getProductUnit, dateFrom, dateTo }: {
+  products: Product[]; stockIn: StockInRecord[]; stockOut: StockOutRecord[];
+  getProductUnit: (id: string) => string; dateFrom?: Date; dateTo?: Date;
 }) {
+  const rows = computeStockBalanceRows(products, stockIn, stockOut, getProductUnit);
+  const refDate = dateTo || dateFrom || new Date();
+  const monthLabel = format(refDate, "MMMM", { locale: th });
+  const yearBE = refDate.getFullYear() + 543;
+  const openDate = dateFrom ? `${format(dateFrom, "d", { locale: th })} ${format(dateFrom, "MMM", { locale: th })} ${dateFrom.getFullYear() + 543}` : "-";
+  const closeDate = dateTo ? `${format(dateTo, "d", { locale: th })} ${format(dateTo, "MMM", { locale: th })} ${dateTo.getFullYear() + 543}` : "-";
+
+  const totals = rows.reduce((acc, r) => {
+    acc.openingValue += r.openingValue;
+    acc.inValue += r.inValue;
+    acc.outValue += r.outValue;
+    acc.closingValue += r.closingValue;
+    return acc;
+  }, { openingValue: 0, inValue: 0, outValue: 0, closingValue: 0 });
+
+  const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmtInt = (n: number) => n.toLocaleString();
+
   return (
-    <div className="rounded-md border">
-      <Table>
+    <div className="rounded-md border bg-card overflow-x-auto">
+      <Table className="text-xs">
         <TableHeader>
-          <TableRow>
-            <TableHead>รหัส</TableHead>
-            <TableHead>ชื่อสินค้า</TableHead>
-            <TableHead>ประเภท</TableHead>
-            <TableHead>หน่วย</TableHead>
-            <TableHead className="text-right">ราคา</TableHead>
-            <TableHead className="text-right">คงเหลือ</TableHead>
-            <TableHead className="text-right">มูลค่า</TableHead>
+          <TableRow className="bg-muted/50">
+            <TableHead rowSpan={2} className="border text-center align-middle">ลำดับ</TableHead>
+            <TableHead rowSpan={2} className="border text-center align-middle">รายการ</TableHead>
+            <TableHead rowSpan={2} className="border text-center align-middle">หน่วย<br/>นับ</TableHead>
+            <TableHead rowSpan={2} className="border text-center align-middle">จำนวน<br/>คงเหลือ<br/>ยกมา</TableHead>
+            <TableHead rowSpan={2} className="border text-center align-middle">ราคา/<br/>หน่วย</TableHead>
+            <TableHead rowSpan={2} className="border text-center align-middle">รวมยอดที่ซื้อ<br/>จำนวนเงิน<br/>ยกมา</TableHead>
+            <TableHead colSpan={6} className="border text-center">ยอดคงคลัง เดือน {monthLabel} {yearBE}</TableHead>
+            <TableHead colSpan={2} className="border text-center">คงเหลือ</TableHead>
+          </TableRow>
+          <TableRow className="bg-muted/50">
+            <TableHead colSpan={3} className="border text-center">รับมา</TableHead>
+            <TableHead colSpan={3} className="border text-center">ใช้ไป</TableHead>
+            <TableHead className="border text-center">หน่วย</TableHead>
+            <TableHead className="border text-center">จำนวนเงิน</TableHead>
+          </TableRow>
+          <TableRow className="bg-muted/30">
+            <TableHead className="border" colSpan={6}></TableHead>
+            <TableHead className="border text-center">ราคา/หน่วย</TableHead>
+            <TableHead className="border text-center">หน่วย</TableHead>
+            <TableHead className="border text-center">จำนวนเงิน</TableHead>
+            <TableHead className="border text-center">ราคา/หน่วย</TableHead>
+            <TableHead className="border text-center">หน่วย</TableHead>
+            <TableHead className="border text-center">จำนวนเงิน</TableHead>
+            <TableHead className="border" colSpan={2}></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {products.length === 0 ? <NoData /> : products.map(p => {
-            const stock = parseInt(p.stock) || 0;
-            const price = parseFloat(p.price) || 0;
-            return (
-              <TableRow key={p.id}>
-                <TableCell className="font-medium">{p.id}</TableCell>
-                <TableCell>{p.name}</TableCell>
-                <TableCell>{getCategoryName(p.category_id)}</TableCell>
-                <TableCell>{getUnitName(p.id)}</TableCell>
-                <TableCell className="text-right">{price.toLocaleString()}</TableCell>
-                <TableCell className="text-right">{stock.toLocaleString()}</TableCell>
-                <TableCell className="text-right font-medium">{(stock * price).toLocaleString()}</TableCell>
-              </TableRow>
-            );
-          })}
+          {rows.length === 0 ? (
+            <TableRow><TableCell colSpan={14} className="text-center text-muted-foreground py-6">ไม่พบข้อมูล</TableCell></TableRow>
+          ) : rows.map(r => (
+            <TableRow key={r.id}>
+              <TableCell className="border text-center">{r.seq}</TableCell>
+              <TableCell className="border">{r.name}</TableCell>
+              <TableCell className="border text-center">{r.unit}</TableCell>
+              <TableCell className="border text-center">{fmtInt(r.opening)}</TableCell>
+              <TableCell className="border text-right">{fmt(r.price)}</TableCell>
+              <TableCell className="border text-right">{r.openingValue ? fmt(r.openingValue) : "-"}</TableCell>
+              <TableCell className="border text-right">{r.inQty ? fmt(r.inPrice) : "-"}</TableCell>
+              <TableCell className="border text-center">{r.inQty}</TableCell>
+              <TableCell className="border text-right">{r.inQty ? fmt(r.inValue) : "-"}</TableCell>
+              <TableCell className="border text-right">{r.outQty ? fmt(r.outPrice) : "-"}</TableCell>
+              <TableCell className="border text-center">{r.outQty}</TableCell>
+              <TableCell className="border text-right">{r.outQty ? fmt(r.outValue) : "-"}</TableCell>
+              <TableCell className="border text-center">{fmtInt(r.closing)}</TableCell>
+              <TableCell className="border text-right">{r.closingValue ? fmt(r.closingValue) : "-"}</TableCell>
+            </TableRow>
+          ))}
+          {rows.length > 0 && (
+            <TableRow className="bg-muted/40 font-semibold">
+              <TableCell className="border" colSpan={5}>สรุปยอดคงคลังวัสดุงานบ้านงานครัว ประจำเดือน {monthLabel} {yearBE}</TableCell>
+              <TableCell className="border text-right">ยกมา {fmt(totals.openingValue)}</TableCell>
+              <TableCell className="border" colSpan={2}>รวม</TableCell>
+              <TableCell className="border text-right">{fmt(totals.inValue)}</TableCell>
+              <TableCell className="border" colSpan={2}></TableCell>
+              <TableCell className="border text-right">{fmt(totals.outValue)}</TableCell>
+              <TableCell className="border"></TableCell>
+              <TableCell className="border text-right">{fmt(totals.closingValue)}</TableCell>
+            </TableRow>
+          )}
         </TableBody>
       </Table>
-      {products.length > 0 && (
-        <div className="p-4 border-t bg-muted/30 text-sm">
-          <span>มูลค่ารวม: <strong className="text-primary">
-            {products.reduce((s, p) => s + (parseInt(p.stock) || 0) * (parseFloat(p.price) || 0), 0).toLocaleString()} บาท
-          </strong></span>
+
+      {/* Summary block */}
+      {rows.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 text-sm border-t">
+          <div className="space-y-1">
+            <div className="font-semibold underline">สรุปยอดคงคลังวัสดุงานบ้านงานครัว ประจำเดือน {monthLabel} {yearBE}</div>
+            <div className="grid grid-cols-[140px,160px,1fr] gap-x-2">
+              <span>ยอดยกมา ณ วันที่</span><span>{openDate}</span><span className="text-right pr-4">{fmt(totals.openingValue)}</span>
+              <span className="underline">ยอดรับเข้า</span><span></span><span className="text-right pr-4">{fmt(totals.inValue)}</span>
+              <span className="underline">ยอดใช้ไป</span><span></span><span className="text-right pr-4">{fmt(totals.outValue)}</span>
+              <span>ยอดคงเหลือ ณ วันที่</span><span>{closeDate}</span><span className="text-right pr-4 font-bold">{fmt(totals.closingValue)}</span>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <div>
+              <div>ลงชื่อ......................................ผู้จัดทำรายงาน</div>
+              <div className="pl-12">(.................................)</div>
+              <div className="pl-12">ตำแหน่ง..............................</div>
+            </div>
+            <div>
+              <div>ลงชื่อ......................................เจ้าหน้าที่</div>
+              <div className="pl-12">(.................................)</div>
+              <div className="pl-12">ตำแหน่ง..............................</div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div>ลงชื่อ......................................หัวหน้าเจ้าหน้าที่</div>
+            <div className="pl-12">(.................................)</div>
+            <div className="pl-12">ตำแหน่ง..............................</div>
+          </div>
+          <div className="space-y-2">
+            <div>ลงชื่อ......................................</div>
+            <div className="pl-12">(.................................)</div>
+            <div className="pl-12">ผู้อำนวยการ</div>
+          </div>
         </div>
       )}
     </div>

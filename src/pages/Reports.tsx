@@ -14,7 +14,7 @@ import { th } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useSheetData } from "@/hooks/useGoogleSheets";
-import { exportToExcel, exportToPDF, buildReportData, exportStockCardToExcel, exportStockCardToPDF } from "@/lib/exportReport";
+import { exportToExcel, exportToPDF, buildReportData, exportStockCardToExcel, exportStockCardToPDF, exportStockBalanceToExcel, exportStockBalanceToPDF } from "@/lib/exportReport";
 
 const reportTypes = [
   { id: "daily", name: "รายงานประจำวัน", description: "สรุปการเคลื่อนไหวสินค้าประจำวัน" },
@@ -112,6 +112,16 @@ export default function Reports() {
           dateFrom,
         };
         saved = type === "excel" ? await exportStockCardToExcel(stockCardParams) : await exportStockCardToPDF(stockCardParams);
+      } else if (selectedReport === "stock-balance") {
+        const params = {
+          products: filtered.products,
+          stockIn: filtered.stockIn,
+          stockOut: filtered.stockOut,
+          helpers: { getProductUnit },
+          dateFrom,
+          dateTo,
+        };
+        saved = type === "excel" ? await exportStockBalanceToExcel(params) : await exportStockBalanceToPDF(params);
       } else {
         const data = buildReportData(selectedReport, filtered.products, filtered.stockIn, filtered.stockOut, helperFns);
         saved = type === "excel" ? await exportToExcel(data) : await exportToPDF(data);

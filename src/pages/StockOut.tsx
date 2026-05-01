@@ -89,6 +89,22 @@ export default function StockOut() {
     }
   }, [isEditMode, editReqNo, stockOuts, products, loaded]);
 
+  // Auto-generate next requisition number (create mode only)
+  useEffect(() => {
+    if (isEditMode) return;
+    if (withdrawNo) return;
+    if (!stockOuts) return;
+    const year = new Date().getFullYear() + 543;
+    const prefix = `WD-${year}-`;
+    const nums = stockOuts
+      .map(r => r.requisition_no)
+      .filter(n => typeof n === "string" && n.startsWith(prefix))
+      .map(n => parseInt(n.slice(prefix.length), 10))
+      .filter(n => !isNaN(n));
+    const next = (nums.length ? Math.max(...nums) : 0) + 1;
+    setWithdrawNo(`${prefix}${String(next).padStart(4, "0")}`);
+  }, [isEditMode, stockOuts, withdrawNo]);
+
   const handleAddItem = () => {
     if (!selectedProduct || !quantity) {
       toast({ variant: "destructive", title: "กรุณาเลือกสินค้าและระบุจำนวน" });

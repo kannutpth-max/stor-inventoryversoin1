@@ -292,16 +292,19 @@ export default function StockOut() {
                 border-bottom: 1px dotted #555;
                 padding: 0 4px;
                 margin: 0 2px;
+                display: inline-block;
+                min-width: 40px;
+                line-height: 1.1;
               }
             }
          `}</style>
 
         {/* Header */}
         <div className="relative mb-1 print:mb-0">
-          <p className="text-sm text-muted-foreground print:text-black text-right receipt-no">เลขที่เบิก<span className="dotted-underline">{withdrawNo || '.......................................................'}</span></p>
+          <p className="text-sm text-muted-foreground print:text-black text-right receipt-no">เลขที่เบิก<span className="dotted-underline" style={{ minWidth: '180px' }}>{withdrawNo || '\u00A0'}</span></p>
           <h1 className="text-lg font-bold text-center print:text-[20pt]">ใบเบิกวัสดุสำนักงาน / งานบ้านงานครัว</h1>
           <p className="text-sm text-muted-foreground print:text-black text-right form-subtitle">โรงพยาบาลประชาธิปัตย์</p>
-          <p className="text-sm text-muted-foreground print:text-black text-right form-info">วันที่<span className="dotted-underline">{date ? format(date, "d") : '............'}</span>เดือน<span className="dotted-underline">{date ? format(date, "MMMM", { locale: th }) : '..............................'}</span>พ.ศ.<span className="dotted-underline">{date ? (date.getFullYear() + 543).toString() : '............'}</span></p>
+          <p className="text-sm text-muted-foreground print:text-black text-right form-info">วันที่<span className="dotted-underline" style={{ minWidth: '40px' }}>{date ? format(date, "d") : '\u00A0'}</span>เดือน<span className="dotted-underline" style={{ minWidth: '110px' }}>{date ? format(date, "MMMM", { locale: th }) : '\u00A0'}</span>พ.ศ.<span className="dotted-underline" style={{ minWidth: '60px' }}>{date ? (date.getFullYear() + 543).toString() : '\u00A0'}</span></p>
         </div>
 
         {/* Form Info */}
@@ -316,10 +319,10 @@ export default function StockOut() {
             <Input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="ตำแหน่ง" className="h-8 text-sm flex-1 print:hidden" />
           </div>
           <div className="hidden print:block form-info">
-            <p>ข้าพเจ้า<span className="dotted-underline">{requester || '......................................................................................................'}</span>ตำแหน่ง<span className="dotted-underline">{position || '......................................................................................................'}</span></p>
+            <p>ข้าพเจ้า<span className="dotted-underline" style={{ minWidth: '320px' }}>{requester || '\u00A0'}</span>ตำแหน่ง<span className="dotted-underline" style={{ minWidth: '260px' }}>{position || '\u00A0'}</span></p>
           </div>
           <div className="hidden print:block form-info">
-            <p>หน่วยงานผู้เบิก (ฝ่าย/งาน)<span className="dotted-underline">{getDepartmentName(departmentId) || '.............................................................................................................................'}</span>มีความประสงค์จะขอเบิกวัสดุเพื่อใช้ในราชการดังรายการต่อไปนี้</p>
+            <p>หน่วยงานผู้เบิก (ฝ่าย/งาน)<span className="dotted-underline" style={{ minWidth: '380px' }}>{getDepartmentName(departmentId) || '\u00A0'}</span>มีความประสงค์จะขอเบิกวัสดุเพื่อใช้ในราชการดังรายการต่อไปนี้</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap print:hidden">
             <Label className="whitespace-nowrap font-medium text-xs">หน่วยงานผู้เบิก (ฝ่าย/งาน)</Label>

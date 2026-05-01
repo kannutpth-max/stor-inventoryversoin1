@@ -303,7 +303,7 @@ export default function StockOut() {
             <p>ข้าพเจ้า<span className="dotted-underline">{requester || '......................................................................................................'}</span>ตำแหน่ง<span className="dotted-underline">{position || '......................................................................................................'}</span></p>
           </div>
           <div className="hidden print:block form-info">
-            <p><p>หน่วยงานผู้เบิก (ฝ่าย/งาน)<span className="dotted-underline">{getDepartmentName(departmentId) || '.............................................................................................................................'}</span>มีความประสงค์จะขอเบิกวัสดุเพื่อใช้ในราชการดังรายการต่อไปนี้</p>มีความประสงค์จะขอเบิกวัสดุเพื่อใช้ในราชการดังรายการต่อไปนี้</p>
+            <p>หน่วยงานผู้เบิก (ฝ่าย/งาน)<span className="dotted-underline">{getDepartmentName(departmentId) || '.............................................................................................................................'}</span>มีความประสงค์จะขอเบิกวัสดุเพื่อใช้ในราชการดังรายการต่อไปนี้</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap print:hidden">
             <Label className="whitespace-nowrap font-medium text-xs">หน่วยงานผู้เบิก (ฝ่าย/งาน)</Label>

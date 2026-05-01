@@ -301,6 +301,209 @@ export async function exportStockCardToPDF(params: StockCardExportParams): Promi
   return saveFile(blob, "รายงานสต็อกการ์ด.pdf");
 }
 
+// ======================== Stock Balance Specific Exports ========================
+
+export interface StockBalanceExportParams {
+  products: any[];
+  stockIn: any[];
+  stockOut: any[];
+  helpers: { getProductUnit: (id: string) => string };
+  dateFrom?: Date;
+  dateTo?: Date;
+}
+
+function buildStockBalanceData(params: StockBalanceExportParams) {
+  const { products, stockIn, stockOut, helpers, dateFrom, dateTo } = params;
+  const rows = products.map((p, idx) => {
+    const price = parseFloat(p.price) || 0;
+    const pIn = stockIn.filter(r => r.product_id === p.id);
+    const pOut = stockOut.filter(r => r.product_id === p.id);
+    const inQty = pIn.reduce((s, r) => s + (parseInt(r.quantity) || 0), 0);
+    const outQty = pOut.reduce((s, r) => s + (parseInt(r.quantity) || 0), 0);
+    const currentStock = parseInt(p.stock) || 0;
+    const opening = currentStock - inQty + outQty;
+    const closing = opening + inQty - outQty;
+    return {
+      seq: idx + 1, id: p.id, name: p.name, unit: helpers.getProductUnit(p.id),
+      opening, price, openingValue: opening * price,
+      inQty, inValue: inQty * price,
+      outQty, outValue: outQty * price,
+      closing, closingValue: closing * price,
+    };
+  });
+  const totals = rows.reduce((a, r) => ({
+    openingValue: a.openingValue + r.openingValue,
+    inValue: a.inValue + r.inValue,
+    outValue: a.outValue + r.outValue,
+    closingValue: a.closingValue + r.closingValue,
+  }), { openingValue: 0, inValue: 0, outValue: 0, closingValue: 0 });
+
+  const refDate = dateTo || dateFrom || new Date();
+  const thMonths = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+  const thMonthsShort = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+  const monthLabel = thMonths[refDate.getMonth()];
+  const yearBE = refDate.getFullYear() + 543;
+  const fmtThaiDate = (d?: Date) => d ? `${d.getDate()} ${thMonthsShort[d.getMonth()]} ${d.getFullYear() + 543}` : "-";
+  return { rows, totals, monthLabel, yearBE, openDate: fmtThaiDate(dateFrom), closeDate: fmtThaiDate(dateTo) };
+}
+
+export async function exportStockBalanceToExcel(params: StockBalanceExportParams): Promise<boolean> {
+  const { rows, totals, monthLabel, yearBE, openDate, closeDate } = buildStockBalanceData(params);
+  const wsData: any[][] = [];
+
+  // Header rows (3-row grouped header)
+  wsData.push([
+    "ลำดับ", "รายการ", "หน่วยนับ", "จำนวนคงเหลือยกมา", "ราคา/หน่วย", "รวมยอดที่ซื้อจำนวนเงินยกมา",
+    `ยอดคงคลัง เดือน ${monthLabel} ${yearBE}`, "", "", "", "", "",
+    "คงเหลือ", ""
+  ]);
+  wsData.push(["", "", "", "", "", "", "รับมา", "", "", "ใช้ไป", "", "", "หน่วย", "จำนวนเงิน"]);
+  wsData.push(["", "", "", "", "", "", "ราคา/หน่วย", "หน่วย", "จำนวนเงิน", "ราคา/หน่วย", "หน่วย", "จำนวนเงิน", "", ""]);
+
+  rows.forEach(r => {
+    wsData.push([
+      r.seq, r.name, r.unit, r.opening, r.price, r.openingValue || "-",
+      r.inQty ? r.price : "-", r.inQty, r.inValue || "-",
+      r.outQty ? r.price : "-", r.outQty, r.outValue || "-",
+      r.closing, r.closingValue || "-",
+    ]);
+  });
+
+  // Summary row
+  wsData.push([
+    "", `สรุปยอดคงคลังวัสดุงานบ้านงานครัว ประจำเดือน ${monthLabel} ${yearBE}`, "", "", "ยกมา", totals.openingValue,
+    "รวม", "", totals.inValue, "", "", totals.outValue, "", totals.closingValue,
+  ]);
+
+  wsData.push([]);
+  wsData.push([`สรุปยอดคงคลังวัสดุงานบ้านงานครัว ประจำเดือน ${monthLabel} ${yearBE}`]);
+  wsData.push([`ยอดยกมา ณ วันที่ ${openDate}`, "", totals.openingValue]);
+  wsData.push(["ยอดรับเข้า", "", totals.inValue]);
+  wsData.push(["ยอดใช้ไป", "", totals.outValue]);
+  wsData.push([`ยอดคงเหลือ ณ วันที่ ${closeDate}`, "", totals.closingValue]);
+  wsData.push([]);
+  wsData.push(["ลงชื่อ......................................ผู้จัดทำรายงาน", "", "", "", "ลงชื่อ......................................หัวหน้าเจ้าหน้าที่"]);
+  wsData.push(["(.................................)", "", "", "", "(.................................)"]);
+  wsData.push(["ตำแหน่ง..............................", "", "", "", "ตำแหน่ง.............................."]);
+  wsData.push([]);
+  wsData.push(["ลงชื่อ......................................เจ้าหน้าที่", "", "", "", "ลงชื่อ......................................"]);
+  wsData.push(["(.................................)", "", "", "", "(.................................)"]);
+  wsData.push(["ตำแหน่ง..............................", "", "", "", "ผู้อำนวยการ"]);
+
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws['!cols'] = [
+    { wch: 6 }, { wch: 32 }, { wch: 8 }, { wch: 10 }, { wch: 10 }, { wch: 14 },
+    { wch: 10 }, { wch: 7 }, { wch: 12 }, { wch: 10 }, { wch: 7 }, { wch: 12 },
+    { wch: 8 }, { wch: 12 },
+  ];
+  ws['!merges'] = [
+    { s: { r: 0, c: 0 }, e: { r: 2, c: 0 } },
+    { s: { r: 0, c: 1 }, e: { r: 2, c: 1 } },
+    { s: { r: 0, c: 2 }, e: { r: 2, c: 2 } },
+    { s: { r: 0, c: 3 }, e: { r: 2, c: 3 } },
+    { s: { r: 0, c: 4 }, e: { r: 2, c: 4 } },
+    { s: { r: 0, c: 5 }, e: { r: 2, c: 5 } },
+    { s: { r: 0, c: 6 }, e: { r: 0, c: 11 } },
+    { s: { r: 0, c: 12 }, e: { r: 0, c: 13 } },
+    { s: { r: 1, c: 6 }, e: { r: 1, c: 8 } },
+    { s: { r: 1, c: 9 }, e: { r: 1, c: 11 } },
+    { s: { r: 1, c: 12 }, e: { r: 2, c: 12 } },
+    { s: { r: 1, c: 13 }, e: { r: 2, c: 13 } },
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "สินค้าคงคลัง");
+  const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+  const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  return saveFile(blob, `รายงานสินค้าคงคลัง-${monthLabel}-${yearBE}.xlsx`);
+}
+
+export async function exportStockBalanceToPDF(params: StockBalanceExportParams): Promise<boolean> {
+  const doc = new jsPDF({ orientation: "landscape", format: "a4" });
+  const hasThai = await loadThaiFont(doc);
+  const fontOpt = hasThai ? { font: "Sarabun" } : {};
+  const { rows, totals, monthLabel, yearBE, openDate, closeDate } = buildStockBalanceData(params);
+  const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  doc.setFontSize(14);
+  doc.text(`รายงานสินค้าคงคลัง ประจำเดือน ${monthLabel} ${yearBE}`, doc.internal.pageSize.getWidth() / 2, 12, { align: "center" });
+
+  const body = rows.map(r => [
+    String(r.seq), r.name, r.unit, String(r.opening), fmt(r.price), r.openingValue ? fmt(r.openingValue) : "-",
+    r.inQty ? fmt(r.price) : "-", String(r.inQty), r.inValue ? fmt(r.inValue) : "-",
+    r.outQty ? fmt(r.price) : "-", String(r.outQty), r.outValue ? fmt(r.outValue) : "-",
+    String(r.closing), r.closingValue ? fmt(r.closingValue) : "-",
+  ]);
+
+  // Summary row appended into table
+  body.push([
+    "", `สรุปยอดคงคลังวัสดุงานบ้านงานครัว ประจำเดือน ${monthLabel} ${yearBE}`, "", "", "ยกมา", fmt(totals.openingValue),
+    "รวม", "", fmt(totals.inValue), "", "", fmt(totals.outValue), "", fmt(totals.closingValue),
+  ]);
+
+  autoTable(doc, {
+    head: [
+      [
+        { content: "ลำดับ", rowSpan: 3 }, { content: "รายการ", rowSpan: 3 }, { content: "หน่วย\nนับ", rowSpan: 3 },
+        { content: "จำนวน\nคงเหลือ\nยกมา", rowSpan: 3 }, { content: "ราคา/\nหน่วย", rowSpan: 3 },
+        { content: "รวมยอด\nที่ซื้อ\nยกมา", rowSpan: 3 },
+        { content: `ยอดคงคลัง เดือน ${monthLabel} ${yearBE}`, colSpan: 6 },
+        { content: "คงเหลือ", colSpan: 2 },
+      ] as any,
+      [
+        { content: "รับมา", colSpan: 3 }, { content: "ใช้ไป", colSpan: 3 },
+        { content: "หน่วย", rowSpan: 2 }, { content: "จำนวนเงิน", rowSpan: 2 },
+      ] as any,
+      [
+        "ราคา/\nหน่วย", "หน่วย", "จำนวนเงิน",
+        "ราคา/\nหน่วย", "หน่วย", "จำนวนเงิน",
+      ] as any,
+    ],
+    body,
+    startY: 18,
+    styles: { fontSize: 7, ...fontOpt, lineWidth: 0.1, lineColor: [80,80,80] },
+    headStyles: { fillColor: [230, 230, 230], textColor: [0,0,0], halign: "center", valign: "middle", fontSize: 7, ...fontOpt },
+    columnStyles: {
+      0: { halign: "center", cellWidth: 10 }, 1: { cellWidth: 50 }, 2: { halign: "center", cellWidth: 14 },
+      3: { halign: "center", cellWidth: 16 }, 4: { halign: "right", cellWidth: 16 }, 5: { halign: "right", cellWidth: 22 },
+      6: { halign: "right", cellWidth: 16 }, 7: { halign: "center", cellWidth: 12 }, 8: { halign: "right", cellWidth: 22 },
+      9: { halign: "right", cellWidth: 16 }, 10: { halign: "center", cellWidth: 12 }, 11: { halign: "right", cellWidth: 22 },
+      12: { halign: "center", cellWidth: 14 }, 13: { halign: "right", cellWidth: 22 },
+    },
+    didParseCell: (data) => {
+      if (data.section === 'body' && data.row.index === body.length - 1) {
+        data.cell.styles.fontStyle = 'bold';
+        data.cell.styles.fillColor = [240, 240, 240];
+      }
+    },
+  });
+
+  let y = (doc as any).lastAutoTable.finalY + 8;
+  doc.setFontSize(10);
+  doc.text(`สรุปยอดคงคลังวัสดุงานบ้านงานครัว ประจำเดือน ${monthLabel} ${yearBE}`, 14, y);
+  y += 6;
+  doc.text(`ยอดยกมา ณ วันที่ ${openDate}`, 14, y); doc.text(fmt(totals.openingValue), 100, y, { align: "right" });
+  y += 5;
+  doc.text(`ยอดรับเข้า`, 14, y); doc.text(fmt(totals.inValue), 100, y, { align: "right" });
+  y += 5;
+  doc.text(`ยอดใช้ไป`, 14, y); doc.text(fmt(totals.outValue), 100, y, { align: "right" });
+  y += 5;
+  doc.text(`ยอดคงเหลือ ณ วันที่ ${closeDate}`, 14, y); doc.text(fmt(totals.closingValue), 100, y, { align: "right" });
+
+  // Signatures
+  let sy = (doc as any).lastAutoTable.finalY + 8;
+  const sx1 = 160, sx2 = 230;
+  doc.text("ลงชื่อ......................................ผู้จัดทำรายงาน", sx1, sy);
+  doc.text("ลงชื่อ......................................หัวหน้าเจ้าหน้าที่", sx1, sy + 18);
+  doc.text("(.................................)", sx1 + 10, sy + 5);
+  doc.text("ตำแหน่ง..............................", sx1 + 10, sy + 10);
+  doc.text("(.................................)", sx1 + 10, sy + 23);
+  doc.text("ตำแหน่ง..............................", sx1 + 10, sy + 28);
+
+  const blob = doc.output("blob");
+  return saveFile(blob, `รายงานสินค้าคงคลัง-${monthLabel}-${yearBE}.pdf`);
+}
+
 // Build ExportData from the current report context
 export function buildReportData(
   reportType: string,

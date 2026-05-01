@@ -89,6 +89,22 @@ export default function StockOut() {
     }
   }, [isEditMode, editReqNo, stockOuts, products, loaded]);
 
+  // Auto-generate next requisition number (create mode only)
+  useEffect(() => {
+    if (isEditMode) return;
+    if (withdrawNo) return;
+    if (!stockOuts) return;
+    const year = new Date().getFullYear() + 543;
+    const prefix = `WD-${year}-`;
+    const nums = stockOuts
+      .map(r => r.requisition_no)
+      .filter(n => typeof n === "string" && n.startsWith(prefix))
+      .map(n => parseInt(n.slice(prefix.length), 10))
+      .filter(n => !isNaN(n));
+    const next = (nums.length ? Math.max(...nums) : 0) + 1;
+    setWithdrawNo(`${prefix}${String(next).padStart(4, "0")}`);
+  }, [isEditMode, stockOuts, withdrawNo]);
+
   const handleAddItem = () => {
     if (!selectedProduct || !quantity) {
       toast({ variant: "destructive", title: "กรุณาเลือกสินค้าและระบุจำนวน" });
@@ -282,10 +298,10 @@ export default function StockOut() {
 
         {/* Header */}
         <div className="relative mb-1 print:mb-0">
-          <p className="text-sm text-muted-foreground print:text-black text-right receipt-no"><p className="text-sm text-muted-foreground print:text-black text-right receipt-no">เลขที่เบิก<span className="hidden print:inline dotted-underline">{withdrawNo || '.......................................................'}</span><span className="print:hidden">.....................</span></p><span className="print:hidden">.....................</span></p>
+          <p className="text-sm text-muted-foreground print:text-black text-right receipt-no">เลขที่เบิก<span className="dotted-underline">{withdrawNo || '.......................................................'}</span></p>
           <h1 className="text-lg font-bold text-center print:text-[20pt]">ใบเบิกวัสดุสำนักงาน / งานบ้านงานครัว</h1>
           <p className="text-sm text-muted-foreground print:text-black text-right form-subtitle">โรงพยาบาลประชาธิปัตย์</p>
-          <p className="text-sm text-muted-foreground print:text-black text-right form-info"><p className="text-sm text-muted-foreground print:text-black text-right form-info">วันที่<span className="hidden print:inline dotted-underline">{date ? format(date, "d") : '............'}</span><span className="print:hidden">......</span>เดือน<span className="hidden print:inline dotted-underline">{date ? format(date, "MMMM", { locale: th }) : '..............................'}</span><span className="print:hidden">............</span>พ.ศ.<span className="hidden print:inline dotted-underline">{date ? (date.getFullYear() + 543).toString() : '............'}</span><span className="print:hidden">............</span></p><span className="print:hidden">............</span>/<span className="hidden print:inline dotted-underline">{date ? (date.getFullYear() + 543).toString() : '............'}</span><span className="print:hidden">............</span></p>
+          <p className="text-sm text-muted-foreground print:text-black text-right form-info">วันที่<span className="dotted-underline">{date ? format(date, "d") : '............'}</span>เดือน<span className="dotted-underline">{date ? format(date, "MMMM", { locale: th }) : '..............................'}</span>พ.ศ.<span className="dotted-underline">{date ? (date.getFullYear() + 543).toString() : '............'}</span></p>
         </div>
 
         {/* Form Info */}
@@ -300,10 +316,10 @@ export default function StockOut() {
             <Input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="ตำแหน่ง" className="h-8 text-sm flex-1 print:hidden" />
           </div>
           <div className="hidden print:block form-info">
-            <p><p>ข้าพเจ้า<span className="dotted-underline">{requester || '......................................................................................................'}</span>ตำแหน่ง<span className="dotted-underline">{position || '......................................................................................................'}</span></p></p>
+            <p>ข้าพเจ้า<span className="dotted-underline">{requester || '......................................................................................................'}</span>ตำแหน่ง<span className="dotted-underline">{position || '......................................................................................................'}</span></p>
           </div>
           <div className="hidden print:block form-info">
-            <p><p>หน่วยงานผู้เบิก (ฝ่าย/งาน)<span className="dotted-underline">{getDepartmentName(departmentId) || '.............................................................................................................................'}</span>มีความประสงค์จะขอเบิกวัสดุเพื่อใช้ในราชการดังรายการต่อไปนี้</p>มีความประสงค์จะขอเบิกวัสดุเพื่อใช้ในราชการดังรายการต่อไปนี้</p>
+            <p>หน่วยงานผู้เบิก (ฝ่าย/งาน)<span className="dotted-underline">{getDepartmentName(departmentId) || '.............................................................................................................................'}</span>มีความประสงค์จะขอเบิกวัสดุเพื่อใช้ในราชการดังรายการต่อไปนี้</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap print:hidden">
             <Label className="whitespace-nowrap font-medium text-xs">หน่วยงานผู้เบิก (ฝ่าย/งาน)</Label>

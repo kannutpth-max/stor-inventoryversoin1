@@ -112,6 +112,16 @@ export default function Reports() {
           dateFrom,
         };
         saved = type === "excel" ? await exportStockCardToExcel(stockCardParams) : await exportStockCardToPDF(stockCardParams);
+      } else if (selectedReport === "stock-balance") {
+        const params = {
+          products: filtered.products,
+          stockIn: filtered.stockIn,
+          stockOut: filtered.stockOut,
+          helpers: { getProductUnit },
+          dateFrom,
+          dateTo,
+        };
+        saved = type === "excel" ? await exportStockBalanceToExcel(params) : await exportStockBalanceToPDF(params);
       } else {
         const data = buildReportData(selectedReport, filtered.products, filtered.stockIn, filtered.stockOut, helperFns);
         saved = type === "excel" ? await exportToExcel(data) : await exportToPDF(data);

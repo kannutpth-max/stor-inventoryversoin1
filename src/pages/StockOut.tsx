@@ -300,7 +300,7 @@ export default function StockOut() {
             <Input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="ตำแหน่ง" className="h-8 text-sm flex-1 print:hidden" />
           </div>
           <div className="hidden print:block form-info">
-            <p><p>ข้าพเจ้า<span className="dotted-underline">{requester || '......................................................................................................'}</span>ตำแหน่ง<span className="dotted-underline">{position || '......................................................................................................'}</span></p></p>
+            <p>ข้าพเจ้า<span className="dotted-underline">{requester || '......................................................................................................'}</span>ตำแหน่ง<span className="dotted-underline">{position || '......................................................................................................'}</span></p>
           </div>
           <div className="hidden print:block form-info">
             <p><p>หน่วยงานผู้เบิก (ฝ่าย/งาน)<span className="dotted-underline">{getDepartmentName(departmentId) || '.............................................................................................................................'}</span>มีความประสงค์จะขอเบิกวัสดุเพื่อใช้ในราชการดังรายการต่อไปนี้</p>มีความประสงค์จะขอเบิกวัสดุเพื่อใช้ในราชการดังรายการต่อไปนี้</p>

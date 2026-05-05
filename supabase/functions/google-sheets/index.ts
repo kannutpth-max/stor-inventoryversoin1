@@ -96,9 +96,11 @@ async function fetchWithRetry(url: string, init: RequestInit, label: string, max
       continue;
     }
     const err = await res.text();
-    throw new Error(`Failed to ${label}: ${err}`);
+    console.error(`Failed to ${label}:`, err);
+    throw new Error(`Failed to ${label}`);
   }
-  throw new Error(`Failed to ${label} after ${maxAttempts} attempts: ${lastErr}`);
+  console.error(`Failed to ${label} after ${maxAttempts} attempts:`, lastErr);
+  throw new Error(`Failed to ${label}`);
 }
 
 async function getSheetData(accessToken: string, sheetId: string, sheetName: string) {

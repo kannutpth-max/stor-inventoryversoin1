@@ -251,7 +251,7 @@ export default function StockOut() {
                font-family: 'Sarabun', 'TH Sarabun New', sans-serif !important;
                 font-size: 11pt;
                  font-weight: 200 !important;
-                 line-height: 1.15;
+                 line-height: 1.6;
                  color: #555 !important;
                }
                #requisition-form * {
@@ -265,7 +265,8 @@ export default function StockOut() {
              #requisition-form table th { font-weight: 300 !important; color: #444 !important; }
              #requisition-form table td, #requisition-form table th { border-color: #888 !important; }
              #requisition-form .form-subtitle { font-size: 11pt !important; }
-             #requisition-form .form-info, #requisition-form .form-info * { font-size: 11pt !important; line-height: 1.2 !important; }
+             #requisition-form .form-info, #requisition-form .form-info * { font-size: 11pt !important; line-height: 1.7 !important; }
+             #requisition-form .form-info p { margin: 4px 0 !important; }
              #requisition-form table { border-collapse: collapse !important; }
              #requisition-form table td, #requisition-form table th {
                padding: 2px 3px !important;
@@ -279,7 +280,7 @@ export default function StockOut() {
                display: grid !important;
                font-size: 11pt !important;
              }
-             #requisition-form .sig-section p { margin: 0 !important; padding: 0 !important; line-height: 1.3 !important; }
+             #requisition-form .sig-section p { margin: 2px 0 !important; padding: 0 !important; line-height: 1.7 !important; }
              #requisition-form .sig-section .checkbox-item {
                display: inline-flex; align-items: center; gap: 3px; margin: 0;
              }

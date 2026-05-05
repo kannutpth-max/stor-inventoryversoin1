@@ -44,6 +44,8 @@ export default function StockInManagement() {
   const updateProduct = useSheetUpdate("products");
 
   const [search, setSearch] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [editItem, setEditItem] = useState<StockInRecord | null>(null);
   const [editQuantity, setEditQuantity] = useState("");
   const [deleteItem, setDeleteItem] = useState<StockInRecord | null>(null);

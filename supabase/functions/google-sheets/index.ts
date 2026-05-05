@@ -157,7 +157,8 @@ async function updateRow(accessToken: string, sheetId: string, sheetName: string
   );
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`Failed to update row in ${sheetName}: ${err}`);
+    console.error(`Failed to update row in ${sheetName}:`, err);
+    throw new Error("Failed to update row");
   }
   return await res.json();
 }

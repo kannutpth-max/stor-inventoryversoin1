@@ -57,14 +57,18 @@ export default function StockInManagement() {
   const getUnitName = (unitId: string) => units.find(u => u.id === unitId)?.name || unitId;
 
   const filteredRecords = useMemo(() => {
-    if (!search) return [...stockIns].sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
     const q = search.toLowerCase();
-    return stockIns.filter(r =>
-      r.invoice_no?.toLowerCase().includes(q) ||
-      getProductName(r.product_id).toLowerCase().includes(q) ||
-      getCompanyName(r.company_id).toLowerCase().includes(q)
-    ).sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
-  }, [stockIns, search, products, companies]);
+    return stockIns.filter(r => {
+      if (search && !(
+        r.invoice_no?.toLowerCase().includes(q) ||
+        getProductName(r.product_id).toLowerCase().includes(q) ||
+        getCompanyName(r.company_id).toLowerCase().includes(q)
+      )) return false;
+      if (dateFrom && r.date < dateFrom) return false;
+      if (dateTo && r.date > dateTo) return false;
+      return true;
+    }).sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
+  }, [stockIns, search, dateFrom, dateTo, products, companies]);
 
   // Group by invoice_no
   const grouped = useMemo(() => {

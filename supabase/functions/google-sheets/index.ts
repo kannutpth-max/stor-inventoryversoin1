@@ -61,9 +61,23 @@ async function getAccessToken(credentials: ServiceAccountCredentials): Promise<s
 
   const tokenData = await tokenResponse.json();
   if (!tokenResponse.ok) {
-    throw new Error(`Token error: ${JSON.stringify(tokenData)}`);
+    console.error("Token error:", tokenData);
+    throw new Error("Failed to authenticate with Google API");
   }
   return tokenData.access_token;
+}
+
+const ALLOWED_SHEETS = ["products", "categories", "units", "companies", "departments", "stock_in", "stock_out"];
+const ALLOWED_ACTIONS = ["read", "create", "update", "delete"];
+const MAX_CELL_LENGTH = 5000;
+
+function sanitizeCellValue(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  let str = String(value);
+  if (str.length > MAX_CELL_LENGTH) str = str.slice(0, MAX_CELL_LENGTH);
+  // Prevent CSV/formula injection
+  if (/^[=+\-@\t\r]/.test(str)) str = "'" + str;
+  return str;
 }
 
 const SHEETS_API = "https://sheets.googleapis.com/v4/spreadsheets";

@@ -61,9 +61,23 @@ async function getAccessToken(credentials: ServiceAccountCredentials): Promise<s
 
   const tokenData = await tokenResponse.json();
   if (!tokenResponse.ok) {
-    throw new Error(`Token error: ${JSON.stringify(tokenData)}`);
+    console.error("Token error:", tokenData);
+    throw new Error("Failed to authenticate with Google API");
   }
   return tokenData.access_token;
+}
+
+const ALLOWED_SHEETS = ["products", "categories", "units", "companies", "departments", "stock_in", "stock_out"];
+const ALLOWED_ACTIONS = ["read", "create", "update", "delete"];
+const MAX_CELL_LENGTH = 5000;
+
+function sanitizeCellValue(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  let str = String(value);
+  if (str.length > MAX_CELL_LENGTH) str = str.slice(0, MAX_CELL_LENGTH);
+  // Prevent CSV/formula injection
+  if (/^[=+\-@\t\r]/.test(str)) str = "'" + str;
+  return str;
 }
 
 const SHEETS_API = "https://sheets.googleapis.com/v4/spreadsheets";
@@ -82,9 +96,11 @@ async function fetchWithRetry(url: string, init: RequestInit, label: string, max
       continue;
     }
     const err = await res.text();
-    throw new Error(`Failed to ${label}: ${err}`);
+    console.error(`Failed to ${label}:`, err);
+    throw new Error(`Failed to ${label}`);
   }
-  throw new Error(`Failed to ${label} after ${maxAttempts} attempts: ${lastErr}`);
+  console.error(`Failed to ${label} after ${maxAttempts} attempts:`, lastErr);
+  throw new Error(`Failed to ${label}`);
 }
 
 async function getSheetData(accessToken: string, sheetId: string, sheetName: string) {
@@ -120,7 +136,8 @@ async function appendRow(accessToken: string, sheetId: string, sheetName: string
   );
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`Failed to append to ${sheetName}: ${err}`);
+    console.error(`Failed to append to ${sheetName}:`, err);
+    throw new Error("Failed to append row");
   }
   return await res.json();
 }
@@ -140,7 +157,8 @@ async function updateRow(accessToken: string, sheetId: string, sheetName: string
   );
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`Failed to update row in ${sheetName}: ${err}`);
+    console.error(`Failed to update row in ${sheetName}:`, err);
+    throw new Error("Failed to update row");
   }
   return await res.json();
 }
@@ -176,7 +194,8 @@ async function deleteRow(accessToken: string, sheetId: string, sheetName: string
   });
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`Failed to delete row from ${sheetName}: ${err}`);
+    console.error(`Failed to delete row from ${sheetName}:`, err);
+    throw new Error("Failed to delete row");
   }
   return await res.json();
 }
@@ -188,10 +207,16 @@ serve(async (req) => {
 
   try {
     const credentialsJson = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_CREDENTIALS");
-    if (!credentialsJson) throw new Error("GOOGLE_SERVICE_ACCOUNT_CREDENTIALS not configured");
+    if (!credentialsJson) {
+      console.error("GOOGLE_SERVICE_ACCOUNT_CREDENTIALS not configured");
+      throw new Error("Server configuration error");
+    }
 
     const googleSheetId = Deno.env.get("GOOGLE_SHEET_ID");
-    if (!googleSheetId) throw new Error("GOOGLE_SHEET_ID not configured");
+    if (!googleSheetId) {
+      console.error("GOOGLE_SHEET_ID not configured");
+      throw new Error("Server configuration error");
+    }
 
     let credentials: ServiceAccountCredentials;
     try {
@@ -202,31 +227,56 @@ serve(async (req) => {
         token_uri: parsed.token_uri || "https://oauth2.googleapis.com/token",
       };
     } catch {
-      throw new Error(
-        `GOOGLE_SERVICE_ACCOUNT_CREDENTIALS is not valid JSON. ` +
-        `Please paste the ENTIRE content of the downloaded .json key file. ` +
-        `Current value starts with: "${credentialsJson.substring(0, 30)}..."`
-      );
+      console.error("GOOGLE_SERVICE_ACCOUNT_CREDENTIALS is not valid JSON");
+      throw new Error("Server configuration error");
     }
 
     if (!credentials.client_email || !credentials.private_key) {
-      throw new Error(
-        "GOOGLE_SERVICE_ACCOUNT_CREDENTIALS is missing required fields (client_email, private_key)."
-      );
+      console.error("Credentials missing required fields");
+      throw new Error("Server configuration error");
     }
-    
+
     // Normalize private key - ensure proper PEM format with \n
     credentials.private_key = credentials.private_key
-      .replace(/\\n/g, '\n')  // Replace literal \n with actual newlines
+      .replace(/\\n/g, '\n')
       .trim();
-    
-    console.log("client_email:", credentials.client_email);
-    console.log("private_key length:", credentials.private_key.length);
-    console.log("private_key starts:", credentials.private_key.substring(0, 40));
-    
+
     const accessToken = await getAccessToken(credentials);
 
-    const { action, sheet, data, id } = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== "object") {
+      return new Response(JSON.stringify({ success: false, error: "Invalid request" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { action, sheet, data, id } = body as { action?: string; sheet?: string; data?: Record<string, unknown>; id?: string };
+
+    // Validate action and sheet
+    if (!action || !ALLOWED_ACTIONS.includes(action)) {
+      return new Response(JSON.stringify({ success: false, error: "Invalid action" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (!sheet || !ALLOWED_SHEETS.includes(sheet)) {
+      return new Response(JSON.stringify({ success: false, error: "Invalid sheet" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if ((action === "update" || action === "delete") && (!id || typeof id !== "string" || id.length > 200)) {
+      return new Response(JSON.stringify({ success: false, error: "Invalid id" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if ((action === "create" || action === "update") && (!data || typeof data !== "object")) {
+      return new Response(JSON.stringify({ success: false, error: "Invalid data" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     let result;
     switch (action) {
@@ -235,34 +285,37 @@ serve(async (req) => {
         break;
       }
       case "create": {
-        const headers = Object.keys(data);
-        const values = headers.map((h) => data[h] || "");
-        // Verify headers match by reading first
-        const existing = await getSheetData(accessToken, googleSheetId, sheet);
-        if (existing.length === 0) {
-          // Sheet might be empty, just append
-        }
+        const headers = Object.keys(data!);
+        const values = headers.map((h) => sanitizeCellValue(data![h]));
         result = await appendRow(accessToken, googleSheetId, sheet, values);
         break;
       }
       case "update": {
         const allRows = await getSheetData(accessToken, googleSheetId, sheet);
         const rowIndex = allRows.findIndex((r: any) => r.id === id);
-        if (rowIndex === -1) throw new Error(`Row with id ${id} not found in ${sheet}`);
+        if (rowIndex === -1) {
+          return new Response(JSON.stringify({ success: false, error: "Not found" }), {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
         const headers = Object.keys(allRows[0]);
-        const values = headers.map((h) => data[h] ?? allRows[rowIndex][h] ?? "");
+        const values = headers.map((h) => sanitizeCellValue(data![h] ?? allRows[rowIndex][h] ?? ""));
         result = await updateRow(accessToken, googleSheetId, sheet, rowIndex, values);
         break;
       }
       case "delete": {
         const allData = await getSheetData(accessToken, googleSheetId, sheet);
         const idx = allData.findIndex((r: any) => r.id === id);
-        if (idx === -1) throw new Error(`Row with id ${id} not found in ${sheet}`);
+        if (idx === -1) {
+          return new Response(JSON.stringify({ success: false, error: "Not found" }), {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
         result = await deleteRow(accessToken, googleSheetId, sheet, idx);
         break;
       }
-      default:
-        throw new Error(`Unknown action: ${action}`);
     }
 
     return new Response(JSON.stringify({ success: true, data: result }), {
@@ -270,8 +323,7 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error("Error:", error);
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return new Response(JSON.stringify({ success: false, error: message }), {
+    return new Response(JSON.stringify({ success: false, error: "Operation failed" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

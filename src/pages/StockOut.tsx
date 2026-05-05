@@ -309,7 +309,7 @@ export default function StockOut() {
 
         {/* Form Info */}
         <div className="space-y-1 print:space-y-0 mb-2 print:mb-0 text-sm form-info">
-          <div className="flex items-center gap-2">
+          <div className="hidden print:flex items-center gap-2">
             <Label className="whitespace-nowrap font-medium">เรียน ผู้อำนวยการโรงพยาบาลประชาธิปัตย์</Label>
           </div>
           <div className="flex items-center gap-2">

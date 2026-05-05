@@ -60,8 +60,16 @@ export default function StockOutManagement() {
         getDepartmentName(records[0].department_id).toLowerCase().includes(q)
       );
     }
+    if (dateFrom || dateTo) {
+      entries = entries.filter(([, records]) => {
+        const d = records[0]?.date || "";
+        if (dateFrom && d < dateFrom) return false;
+        if (dateTo && d > dateTo) return false;
+        return true;
+      });
+    }
     return entries;
-  }, [stockOuts, search, departments]);
+  }, [stockOuts, search, dateFrom, dateTo, departments]);
 
   const formatDate = (dateStr: string) => {
     try { return format(new Date(dateStr), "d MMM yyyy", { locale: th }); }

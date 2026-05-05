@@ -32,6 +32,8 @@ export default function StockOutManagement() {
   const deleteStockOut = useSheetDelete("stock_out");
   const updateProduct = useSheetUpdate("products");
   const [search, setSearch] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [deleteReqNo, setDeleteReqNo] = useState<string | null>(null);
   const { toast } = useToast();
 

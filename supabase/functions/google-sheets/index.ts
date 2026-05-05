@@ -136,7 +136,8 @@ async function appendRow(accessToken: string, sheetId: string, sheetName: string
   );
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`Failed to append to ${sheetName}: ${err}`);
+    console.error(`Failed to append to ${sheetName}:`, err);
+    throw new Error("Failed to append row");
   }
   return await res.json();
 }

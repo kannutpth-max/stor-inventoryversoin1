@@ -466,7 +466,7 @@ export default function StockOut() {
         </div>
 
         {/* Signature Section */}
-        <div className="mt-3 print:mt-1 text-xs sig-section">
+        <div className="hidden print:block mt-3 print:mt-1 text-xs sig-section">
           <div className="grid grid-cols-2 gap-6 print:gap-4 sig-grid">
             {/* Left Column */}
             <div className="space-y-0">

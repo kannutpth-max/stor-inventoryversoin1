@@ -265,7 +265,8 @@ export default function StockOut() {
              #requisition-form table th { font-weight: 300 !important; color: #444 !important; }
              #requisition-form table td, #requisition-form table th { border-color: #888 !important; }
              #requisition-form .form-subtitle { font-size: 11pt !important; }
-             #requisition-form .form-info, #requisition-form .form-info * { font-size: 11pt !important; line-height: 1.2 !important; }
+             #requisition-form .form-info, #requisition-form .form-info * { font-size: 11pt !important; line-height: 1.7 !important; }
+             #requisition-form .form-info p { margin: 4px 0 !important; }
              #requisition-form table { border-collapse: collapse !important; }
              #requisition-form table td, #requisition-form table th {
                padding: 2px 3px !important;

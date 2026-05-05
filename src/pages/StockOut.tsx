@@ -251,7 +251,7 @@ export default function StockOut() {
                font-family: 'Sarabun', 'TH Sarabun New', sans-serif !important;
                 font-size: 11pt;
                  font-weight: 200 !important;
-                 line-height: 1.15;
+                 line-height: 1.6;
                  color: #555 !important;
                }
                #requisition-form * {

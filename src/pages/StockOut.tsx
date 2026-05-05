@@ -280,7 +280,7 @@ export default function StockOut() {
                display: grid !important;
                font-size: 11pt !important;
              }
-             #requisition-form .sig-section p { margin: 0 !important; padding: 0 !important; line-height: 1.3 !important; }
+             #requisition-form .sig-section p { margin: 2px 0 !important; padding: 0 !important; line-height: 1.7 !important; }
              #requisition-form .sig-section .checkbox-item {
                display: inline-flex; align-items: center; gap: 3px; margin: 0;
              }

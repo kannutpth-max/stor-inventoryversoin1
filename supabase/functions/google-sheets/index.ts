@@ -194,7 +194,8 @@ async function deleteRow(accessToken: string, sheetId: string, sheetName: string
   });
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`Failed to delete row from ${sheetName}: ${err}`);
+    console.error(`Failed to delete row from ${sheetName}:`, err);
+    throw new Error("Failed to delete row");
   }
   return await res.json();
 }

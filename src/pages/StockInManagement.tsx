@@ -44,6 +44,8 @@ export default function StockInManagement() {
   const updateProduct = useSheetUpdate("products");
 
   const [search, setSearch] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [editItem, setEditItem] = useState<StockInRecord | null>(null);
   const [editQuantity, setEditQuantity] = useState("");
   const [deleteItem, setDeleteItem] = useState<StockInRecord | null>(null);
@@ -55,14 +57,18 @@ export default function StockInManagement() {
   const getUnitName = (unitId: string) => units.find(u => u.id === unitId)?.name || unitId;
 
   const filteredRecords = useMemo(() => {
-    if (!search) return [...stockIns].sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
     const q = search.toLowerCase();
-    return stockIns.filter(r =>
-      r.invoice_no?.toLowerCase().includes(q) ||
-      getProductName(r.product_id).toLowerCase().includes(q) ||
-      getCompanyName(r.company_id).toLowerCase().includes(q)
-    ).sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
-  }, [stockIns, search, products, companies]);
+    return stockIns.filter(r => {
+      if (search && !(
+        r.invoice_no?.toLowerCase().includes(q) ||
+        getProductName(r.product_id).toLowerCase().includes(q) ||
+        getCompanyName(r.company_id).toLowerCase().includes(q)
+      )) return false;
+      if (dateFrom && r.date < dateFrom) return false;
+      if (dateTo && r.date > dateTo) return false;
+      return true;
+    }).sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
+  }, [stockIns, search, dateFrom, dateTo, products, companies]);
 
   // Group by invoice_no
   const grouped = useMemo(() => {
@@ -154,14 +160,29 @@ export default function StockInManagement() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="relative max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="ค้นหาเลขที่ใบส่งของ, สินค้า, บริษัท..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
-            />
+          <div className="flex flex-wrap gap-3 items-end">
+            <div className="relative max-w-sm flex-1 min-w-[220px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="ค้นหาเลขที่ใบส่งของ, สินค้า, บริษัท..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">จากวันที่</Label>
+              <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[170px]" />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">ถึงวันที่</Label>
+              <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[170px]" />
+            </div>
+            {(dateFrom || dateTo) && (
+              <Button variant="ghost" size="sm" onClick={() => { setDateFrom(""); setDateTo(""); }}>
+                ล้างวันที่
+              </Button>
+            )}
           </div>
 
           {grouped.length === 0 ? (

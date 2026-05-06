@@ -111,7 +111,7 @@ export function Sidebar({ onLogout, collapsed, onToggle }: SidebarProps) {
           <div className="flex items-center gap-2">
             <Package className="h-8 w-8 text-sidebar-primary" />
             <div>
-              <h1 className="text-lg font-bold text-sidebar-foreground">คลังสินค้า</h1>
+              <h1 className="text-lg font-bold text-sidebar-foreground">วัสดุคงคลัง</h1>
               <p className="text-xs text-sidebar-foreground/60">Inventory System</p>
             </div>
           </div>

@@ -115,7 +115,7 @@ export default function Auth() {
         </Card>
 
         <p className="text-center text-sm text-muted-foreground mt-6">
-          ระบบจัดการคลังสินค้า สำหรับหน่วยงานราชการ
+          ระบบวัสดุคงคลัง โรงพยาบาลประชาธิปัตย์
         </p>
       </div>
     </div>

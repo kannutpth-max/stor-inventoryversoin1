@@ -14,7 +14,7 @@ export default function Settings() {
             ตั้งค่าระบบ
           </CardTitle>
           <CardDescription>
-            จัดการการตั้งค่าต่างๆ ของระบบคลังสินค้า
+            จัดการการตั้งค่าต่างๆ ของระบบวัสดุคงคลัง
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">

@@ -76,7 +76,7 @@ export default function Categories() {
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle className="flex items-center gap-2">
             <Layers className="h-5 w-5" />
-            ประเภทสินค้า
+            ประเภทวัสดุ
           </CardTitle>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
@@ -88,7 +88,7 @@ export default function Categories() {
             <DialogContent className="sm:max-w-[400px]">
               <DialogHeader>
                 <DialogTitle>{editingCategory ? "แก้ไขประเภท" : "เพิ่มประเภทใหม่"}</DialogTitle>
-                <DialogDescription>กรอกข้อมูลประเภทสินค้า</DialogDescription>
+                <DialogDescription>กรอกข้อมูลประเภทวัสดุ</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">

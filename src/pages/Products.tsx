@@ -85,10 +85,10 @@ export default function Products() {
     try {
       if (editingProduct) {
         await updateMutation.mutateAsync({ id: editingProduct.id, data: formData });
-        toast({ title: "แก้ไขสินค้าสำเร็จ" });
+        toast({ title: "แก้ไขวัสดุสำเร็จ" });
       } else {
         await createMutation.mutateAsync(formData);
-        toast({ title: "เพิ่มสินค้าสำเร็จ" });
+        toast({ title: "เพิ่มวัสดุสำเร็จ" });
       }
       setIsOpen(false);
     } catch (e: any) {
@@ -99,7 +99,7 @@ export default function Products() {
   const handleDelete = async (id: string) => {
     try {
       await deleteMutation.mutateAsync(id);
-      toast({ title: "ลบสินค้าสำเร็จ" });
+      toast({ title: "ลบวัสดุสำเร็จ" });
     } catch (e: any) {
       toast({ variant: "destructive", title: "เกิดข้อผิดพลาด", description: e.message });
     }
@@ -113,28 +113,28 @@ export default function Products() {
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle className="flex items-center gap-2">
             <Package className="h-5 w-5" />
-            ข้อมูลสินค้า
+            ข้อมูลวัสดุ
           </CardTitle>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
               <Button onClick={() => handleOpenDialog()}>
                 <Plus className="mr-2 h-4 w-4" />
-                เพิ่มสินค้า
+                เพิ่มวัสดุ
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
-                <DialogTitle>{editingProduct ? "แก้ไขสินค้า" : "เพิ่มสินค้าใหม่"}</DialogTitle>
-                <DialogDescription>กรอกข้อมูลสินค้าให้ครบถ้วน</DialogDescription>
+                <DialogTitle>{editingProduct ? "แก้ไขวัสดุ" : "เพิ่มวัสดุใหม่"}</DialogTitle>
+                <DialogDescription>กรอกข้อมูลวัสดุให้ครบถ้วน</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label className="text-right">รหัสสินค้า</Label>
+                  <Label className="text-right">รหัสวัสดุ</Label>
                   <Input value={formData.id} className="col-span-3" disabled={!!editingProduct}
                     onChange={(e) => setFormData({ ...formData, id: e.target.value })} />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label className="text-right">ชื่อสินค้า</Label>
+                  <Label className="text-right">ชื่อวัสดุ</Label>
                   <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="col-span-3" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
@@ -208,7 +208,7 @@ export default function Products() {
           <div className="mb-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="ค้นหาสินค้า..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 max-w-sm" />
+              <Input placeholder="ค้นหาวัสดุ..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 max-w-sm" />
             </div>
           </div>
           {isLoading ? (
@@ -220,7 +220,7 @@ export default function Products() {
                   <TableRow>
                     <TableHead className="w-16">รูป</TableHead>
                     <TableHead>รหัส</TableHead>
-                    <TableHead>ชื่อสินค้า</TableHead>
+                    <TableHead>ชื่อวัสดุ</TableHead>
                     <TableHead>ประเภท</TableHead>
                     <TableHead>หน่วย</TableHead>
                     <TableHead className="text-right">ราคา</TableHead>

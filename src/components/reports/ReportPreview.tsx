@@ -141,7 +141,7 @@ function DailyMonthlyReport({ stockIn, stockOut, getProductName, getProductUnit,
             <TableHead>วันที่</TableHead>
             <TableHead>ประเภท</TableHead>
             <TableHead>เลขที่เอกสาร</TableHead>
-            <TableHead>สินค้า</TableHead>
+            <TableHead>วัสดุ</TableHead>
             <TableHead>หน่วย</TableHead>
             <TableHead className="text-right">จำนวน</TableHead>
             <TableHead>จาก/ไปยัง</TableHead>
@@ -521,7 +521,7 @@ function ByCompanyReport({ stockIn, companies, getProductName, getProductUnit }:
                 <TableRow>
                   <TableHead>วันที่</TableHead>
                   <TableHead>เลขที่ใบส่งของ</TableHead>
-                  <TableHead>สินค้า</TableHead>
+                  <TableHead>วัสดุ</TableHead>
                   <TableHead>หน่วย</TableHead>
                   <TableHead className="text-right">จำนวน</TableHead>
                 </TableRow>
@@ -566,7 +566,7 @@ function ByDepartmentReport({ stockOut, departments, getProductName, getProductU
                 <TableRow>
                   <TableHead>วันที่</TableHead>
                   <TableHead>เลขที่ใบเบิก</TableHead>
-                  <TableHead>สินค้า</TableHead>
+                  <TableHead>วัสดุ</TableHead>
                   <TableHead>หน่วย</TableHead>
                   <TableHead className="text-right">จำนวน</TableHead>
                 </TableRow>
@@ -604,7 +604,7 @@ function StockInHistoryReport({ stockIn, getProductName, getProductUnit, getComp
             <TableHead>รหัส</TableHead>
             <TableHead>วันที่</TableHead>
             <TableHead>เลขที่ใบส่งของ</TableHead>
-            <TableHead>สินค้า</TableHead>
+            <TableHead>วัสดุ</TableHead>
             <TableHead>หน่วย</TableHead>
             <TableHead className="text-right">จำนวน</TableHead>
             <TableHead>จากบริษัท</TableHead>
@@ -639,7 +639,7 @@ function StockOutHistoryReport({ stockOut, getProductName, getProductUnit, getDe
             <TableHead>รหัส</TableHead>
             <TableHead>วันที่</TableHead>
             <TableHead>เลขที่ใบเบิก</TableHead>
-            <TableHead>สินค้า</TableHead>
+            <TableHead>วัสดุ</TableHead>
             <TableHead>หน่วย</TableHead>
             <TableHead className="text-right">จำนวน</TableHead>
             <TableHead>หน่วยงาน</TableHead>
@@ -678,7 +678,7 @@ function LowStockReport({ products, getCategoryName, getProductUnit }: {
         <TableHeader>
           <TableRow>
             <TableHead>รหัส</TableHead>
-            <TableHead>ชื่อสินค้า</TableHead>
+            <TableHead>ชื่อวัสดุ</TableHead>
             <TableHead>ประเภท</TableHead>
             <TableHead>หน่วย</TableHead>
             <TableHead className="text-right">คงเหลือ</TableHead>
@@ -689,7 +689,7 @@ function LowStockReport({ products, getCategoryName, getProductUnit }: {
         </TableHeader>
         <TableBody>
           {lowStockProducts.length === 0 ? (
-            <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">ไม่มีสินค้าต่ำกว่าเกณฑ์</TableCell></TableRow>
+            <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">ไม่มีวัสดุต่ำกว่าเกณฑ์</TableCell></TableRow>
           ) : lowStockProducts.map(p => {
             const stock = parseInt(p.stock) || 0;
             const minStock = parseInt(p.min_stock) || 0;

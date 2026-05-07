@@ -66,15 +66,15 @@ function AppRoutes() {
 
       {/* Accessible by all logged-in users */}
       <Route path="/dashboard" element={<ProtectedRoute title="ภาพรวม"><Dashboard /></ProtectedRoute>} />
-      <Route path="/stock-out" element={<ProtectedRoute title="เบิกสินค้า"><StockOut /></ProtectedRoute>} />
+      <Route path="/stock-out" element={<ProtectedRoute title="เบิกวัสดุ"><StockOut /></ProtectedRoute>} />
 
       {/* Admin only */}
-      <Route path="/products" element={<ProtectedRoute title="ข้อมูลสินค้า" allowedRoles={["admin"]}><Products /></ProtectedRoute>} />
-      <Route path="/categories" element={<ProtectedRoute title="ประเภทสินค้า" allowedRoles={["admin"]}><Categories /></ProtectedRoute>} />
+      <Route path="/products" element={<ProtectedRoute title="ข้อมูลวัสดุ" allowedRoles={["admin"]}><Products /></ProtectedRoute>} />
+      <Route path="/categories" element={<ProtectedRoute title="ประเภทวัสดุ" allowedRoles={["admin"]}><Categories /></ProtectedRoute>} />
       <Route path="/units" element={<ProtectedRoute title="หน่วยนับ" allowedRoles={["admin"]}><Units /></ProtectedRoute>} />
       <Route path="/companies" element={<ProtectedRoute title="บริษัท/ผู้ขาย" allowedRoles={["admin"]}><Companies /></ProtectedRoute>} />
       <Route path="/departments" element={<ProtectedRoute title="หน่วยงานเบิก" allowedRoles={["admin"]}><Departments /></ProtectedRoute>} />
-      <Route path="/stock-in" element={<ProtectedRoute title="รับเข้าสินค้า" allowedRoles={["admin"]}><StockIn /></ProtectedRoute>} />
+      <Route path="/stock-in" element={<ProtectedRoute title="รับเข้าวัสดุ" allowedRoles={["admin"]}><StockIn /></ProtectedRoute>} />
       <Route path="/stock-out-manage" element={<ProtectedRoute title="จัดการรายการเบิก" allowedRoles={["admin"]}><StockOutManagement /></ProtectedRoute>} />
       <Route path="/stock-in-manage" element={<ProtectedRoute title="จัดการรายการรับ" allowedRoles={["admin"]}><StockInManagement /></ProtectedRoute>} />
       <Route path="/reports" element={<ProtectedRoute title="รายงาน" allowedRoles={["admin"]}><Reports /></ProtectedRoute>} />

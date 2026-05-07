@@ -7,9 +7,9 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
 const backupOptions = [
-  { id: "products", name: "ข้อมูลสินค้า", icon: Package, description: "รายการสินค้าทั้งหมด" },
-  { id: "inventory", name: "วัสดุคงคลัง", icon: Database, description: "ยอดคงเหลือสินค้า" },
-  { id: "categories", name: "ประเภทสินค้า", icon: Layers, description: "รายการประเภทสินค้า" },
+  { id: "products", name: "ข้อมูลวัสดุ", icon: Package, description: "รายการวัสดุทั้งหมด" },
+  { id: "inventory", name: "วัสดุคงคลัง", icon: Database, description: "ยอดคงเหลือวัสดุ" },
+  { id: "categories", name: "ประเภทวัสดุ", icon: Layers, description: "รายการประเภทวัสดุ" },
   { id: "companies", name: "บริษัท/ผู้ขาย", icon: Building2, description: "รายการบริษัทผู้ขาย" },
   { id: "departments", name: "หน่วยงานเบิก", icon: Users, description: "รายการหน่วยงาน" },
   { id: "stock-in", name: "ประวัติรับเข้า", icon: FileText, description: "รายการรับเข้าทั้งหมด" },

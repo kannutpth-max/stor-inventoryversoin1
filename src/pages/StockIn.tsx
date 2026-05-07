@@ -47,7 +47,7 @@ export default function StockIn() {
 
   const handleAddItem = () => {
     if (!selectedProduct || !quantity) {
-      toast({ variant: "destructive", title: "กรุณาเลือกสินค้าและระบุจำนวน" });
+      toast({ variant: "destructive", title: "กรุณาเลือกวัสดุและระบุจำนวน" });
       return;
     }
     const product = products.find((p) => p.id === selectedProduct);
@@ -81,14 +81,14 @@ export default function StockIn() {
         });
       }
 
-      // รวมจำนวนสต็อกที่ต้องเพิ่มต่อสินค้า
+      // รวมจำนวนสต็อกที่ต้องเพิ่มต่อวัสดุ
       const stockChanges = new Map<string, number>();
       for (const item of items) {
         const prev = stockChanges.get(item.productId) || 0;
         stockChanges.set(item.productId, prev + item.quantity);
       }
 
-      // อัพเดทสต็อกสินค้าทีละรายการ พร้อมหน่วงเวลาเล็กน้อย
+      // อัพเดทสต็อกวัสดุทีละรายการ พร้อมหน่วงเวลาเล็กน้อย
       for (const [productId, addQty] of stockChanges) {
         const product = products.find(p => p.id === productId);
         if (product) {
@@ -106,7 +106,7 @@ export default function StockIn() {
               data: { ...product, stock: (currentStock + addQty).toString() },
             });
           }
-          // หน่วงเวลาระหว่างการอัพเดทแต่ละสินค้า
+          // หน่วงเวลาระหว่างการอัพเดทแต่ละวัสดุ
           await new Promise(r => setTimeout(r, 500));
         }
       }
@@ -125,7 +125,7 @@ export default function StockIn() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <PackagePlus className="h-5 w-5" />
-            รับเข้าสินค้า
+            รับเข้าวัสดุ
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -163,7 +163,7 @@ export default function StockIn() {
           </div>
 
           <div className="rounded-lg border p-4 bg-muted/30">
-            <h3 className="font-medium mb-4">เพิ่มรายการสินค้า</h3>
+            <h3 className="font-medium mb-4">เพิ่มรายการวัสดุ</h3>
             <div className="grid gap-4 md:grid-cols-5">
               <div className="md:col-span-2">
                 <Select value={selectedProduct} onValueChange={(val) => {
@@ -171,7 +171,7 @@ export default function StockIn() {
                   const p = products.find(prod => prod.id === val);
                   if (p && p.price) setPrice(p.price);
                 }}>
-                  <SelectTrigger><SelectValue placeholder="เลือกสินค้า" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="เลือกวัสดุ" /></SelectTrigger>
                   <SelectContent>
                     {products.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}
                   </SelectContent>
@@ -187,14 +187,14 @@ export default function StockIn() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>รหัสสินค้า</TableHead><TableHead>ชื่อสินค้า</TableHead><TableHead>หน่วย</TableHead>
+                  <TableHead>รหัสวัสดุ</TableHead><TableHead>ชื่อวัสดุ</TableHead><TableHead>หน่วย</TableHead>
                   <TableHead className="text-right">จำนวน</TableHead><TableHead className="text-right">ราคา/หน่วย</TableHead>
                   <TableHead className="text-right">รวม</TableHead><TableHead className="text-center">ลบ</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {items.length === 0 ? (
-                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">ยังไม่มีรายการสินค้า</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">ยังไม่มีรายการวัสดุ</TableCell></TableRow>
                 ) : items.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell>{item.productId}</TableCell><TableCell>{item.productName}</TableCell><TableCell>{item.unit}</TableCell>

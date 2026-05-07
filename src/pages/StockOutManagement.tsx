@@ -181,7 +181,7 @@ export default function StockOutManagement() {
                             size="icon"
                             className="h-8 w-8"
                             onClick={() => navigate(`/stock-out?edit=${encodeURIComponent(reqNo)}`)}
-                            title="แก้ไข / จ่ายสินค้า"
+                            title="แก้ไข / จ่ายวัสดุ"
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>

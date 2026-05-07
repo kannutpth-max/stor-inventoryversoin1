@@ -46,15 +46,15 @@ export default function Settings() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label>แจ้งเตือนสินค้าต่ำกว่าเกณฑ์</Label>
-                  <p className="text-sm text-muted-foreground">แสดงการแจ้งเตือนเมื่อสินค้าต่ำกว่าเกณฑ์ขั้นต่ำ</p>
+                  <Label>แจ้งเตือนวัสดุต่ำกว่าเกณฑ์</Label>
+                  <p className="text-sm text-muted-foreground">แสดงการแจ้งเตือนเมื่อวัสดุต่ำกว่าเกณฑ์ขั้นต่ำ</p>
                 </div>
                 <Switch defaultChecked />
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <Label>แจ้งเตือนการเบิกสินค้า</Label>
-                  <p className="text-sm text-muted-foreground">แสดงการแจ้งเตือนเมื่อมีการเบิกสินค้า</p>
+                  <Label>แจ้งเตือนการเบิกวัสดุ</Label>
+                  <p className="text-sm text-muted-foreground">แสดงการแจ้งเตือนเมื่อมีการเบิกวัสดุ</p>
                 </div>
                 <Switch />
               </div>

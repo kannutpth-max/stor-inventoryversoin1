@@ -412,10 +412,10 @@ export async function exportStockBalanceToExcel(params: StockBalanceExportParams
   ];
 
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "สินค้าคงคลัง");
+  XLSX.utils.book_append_sheet(wb, ws, "วัสดุคงคลัง");
   const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
   const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-  return saveFile(blob, `รายงานสินค้าคงคลัง-${monthLabel}-${yearBE}.xlsx`);
+  return saveFile(blob, `รายงานวัสดุคงคลัง-${monthLabel}-${yearBE}.xlsx`);
 }
 
 export async function exportStockBalanceToPDF(params: StockBalanceExportParams): Promise<boolean> {
@@ -426,7 +426,7 @@ export async function exportStockBalanceToPDF(params: StockBalanceExportParams):
   const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   doc.setFontSize(14);
-  doc.text(`รายงานสินค้าคงคลัง ประจำเดือน ${monthLabel} ${yearBE}`, doc.internal.pageSize.getWidth() / 2, 12, { align: "center" });
+  doc.text(`รายงานวัสดุคงคลัง ประจำเดือน ${monthLabel} ${yearBE}`, doc.internal.pageSize.getWidth() / 2, 12, { align: "center" });
 
   const body = rows.map(r => [
     String(r.seq), r.name, r.unit, String(r.opening), fmt(r.price), r.openingValue ? fmt(r.openingValue) : "-",
@@ -501,7 +501,7 @@ export async function exportStockBalanceToPDF(params: StockBalanceExportParams):
   doc.text("ตำแหน่ง..............................", sx1 + 10, sy + 28);
 
   const blob = doc.output("blob");
-  return saveFile(blob, `รายงานสินค้าคงคลัง-${monthLabel}-${yearBE}.pdf`);
+  return saveFile(blob, `รายงานวัสดุคงคลัง-${monthLabel}-${yearBE}.pdf`);
 }
 
 // Build ExportData from the current report context
@@ -530,7 +530,7 @@ export function buildReportData(
       ].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
       return {
         title: reportType === "daily" ? "รายงานประจำวัน" : reportType === "monthly" ? "รายงานประจำเดือน" : "รายงานการรับ-จ่าย",
-        headers: ["วันที่", "ประเภท", "เลขที่เอกสาร", "สินค้า", "หน่วย", "จำนวน", "จาก/ไปยัง"],
+        headers: ["วันที่", "ประเภท", "เลขที่เอกสาร", "วัสดุ", "หน่วย", "จำนวน", "จาก/ไปยัง"],
         rows: allMovements.map(m => [
           m.date, m.type === "in" ? "รับเข้า" : "เบิกออก", m.ref,
           getProductName(m.product_id), getProductUnit(m.product_id),
@@ -540,8 +540,8 @@ export function buildReportData(
     }
     case "stock-balance": {
       return {
-        title: "รายงานสินค้าคงคลัง",
-        headers: ["รหัส", "ชื่อสินค้า", "ประเภท", "หน่วย", "ราคา", "คงเหลือ", "มูลค่า"],
+        title: "รายงานวัสดุคงคลัง",
+        headers: ["รหัส", "ชื่อวัสดุ", "ประเภท", "หน่วย", "ราคา", "คงเหลือ", "มูลค่า"],
         rows: products.map(p => {
           const stock = parseInt(p.stock) || 0;
           const price = parseFloat(p.price) || 0;
@@ -550,7 +550,7 @@ export function buildReportData(
       };
     }
     case "stock-card": {
-      const headers = ["สินค้า", "วันที่", "รายการ", "รับเข้า", "เบิกออก", "คงเหลือ"];
+      const headers = ["วัสดุ", "วันที่", "รายการ", "รับเข้า", "เบิกออก", "คงเหลือ"];
       const rows: (string | number)[][] = [];
       products.forEach(product => {
         const pIn = stockIn.filter(r => r.product_id === product.id).map(r => ({ ...r, type: "in" }));
@@ -577,7 +577,7 @@ export function buildReportData(
           rows.push([getCompanyName(cid), r.date, r.invoice_no, getProductName(r.product_id), getProductUnit(r.product_id), parseInt(r.quantity) || 0]);
         });
       });
-      return { title: "รับสินค้าแยกตามบริษัท", headers: ["บริษัท", "วันที่", "เลขที่ใบส่งของ", "สินค้า", "หน่วย", "จำนวน"], rows };
+      return { title: "รับวัสดุแยกตามบริษัท", headers: ["บริษัท", "วันที่", "เลขที่ใบส่งของ", "วัสดุ", "หน่วย", "จำนวน"], rows };
     }
     case "by-department": {
       const rows: (string | number)[][] = [];
@@ -587,18 +587,18 @@ export function buildReportData(
           rows.push([getDepartmentName(did), r.date, r.requisition_no, getProductName(r.product_id), getProductUnit(r.product_id), parseInt(r.quantity) || 0]);
         });
       });
-      return { title: "เบิกสินค้าแยกตามหน่วยงาน", headers: ["หน่วยงาน", "วันที่", "เลขที่ใบเบิก", "สินค้า", "หน่วย", "จำนวน"], rows };
+      return { title: "เบิกวัสดุแยกตามหน่วยงาน", headers: ["หน่วยงาน", "วันที่", "เลขที่ใบเบิก", "วัสดุ", "หน่วย", "จำนวน"], rows };
     }
     case "stock-in-history":
       return {
         title: "ประวัติการรับเข้า",
-        headers: ["รหัส", "วันที่", "เลขที่ใบส่งของ", "สินค้า", "หน่วย", "จำนวน", "จากบริษัท"],
+        headers: ["รหัส", "วันที่", "เลขที่ใบส่งของ", "วัสดุ", "หน่วย", "จำนวน", "จากบริษัท"],
         rows: stockIn.map(r => [r.id, r.date, r.invoice_no, getProductName(r.product_id), getProductUnit(r.product_id), parseInt(r.quantity) || 0, getCompanyName(r.company_id)]),
       };
     case "stock-out-history":
       return {
         title: "ประวัติการเบิกจ่าย",
-        headers: ["รหัส", "วันที่", "เลขที่ใบเบิก", "สินค้า", "หน่วย", "จำนวน", "หน่วยงาน"],
+        headers: ["รหัส", "วันที่", "เลขที่ใบเบิก", "วัสดุ", "หน่วย", "จำนวน", "หน่วยงาน"],
         rows: stockOut.map(r => [r.id, r.date, r.requisition_no, getProductName(r.product_id), getProductUnit(r.product_id), parseInt(r.quantity) || 0, getDepartmentName(r.department_id)]),
       };
     case "low-stock": {
@@ -608,8 +608,8 @@ export function buildReportData(
         return minStock > 0 && stock < minStock;
       });
       return {
-        title: "สินค้าต่ำกว่าเกณฑ์",
-        headers: ["รหัส", "ชื่อสินค้า", "ประเภท", "หน่วย", "คงเหลือ", "เกณฑ์ขั้นต่ำ", "ขาดอีก"],
+        title: "วัสดุต่ำกว่าเกณฑ์",
+        headers: ["รหัส", "ชื่อวัสดุ", "ประเภท", "หน่วย", "คงเหลือ", "เกณฑ์ขั้นต่ำ", "ขาดอีก"],
         rows: lowStock.map(p => {
           const stock = parseInt(p.stock) || 0;
           const minStock = parseInt(p.min_stock) || 0;

@@ -164,7 +164,7 @@ export default function StockInManagement() {
             <div className="relative max-w-sm flex-1 min-w-[220px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="ค้นหาเลขที่ใบส่งของ, สินค้า, บริษัท..."
+                placeholder="ค้นหาเลขที่ใบส่งของ, วัสดุ, บริษัท..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-10"
@@ -207,7 +207,7 @@ export default function StockInManagement() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>สินค้า</TableHead>
+                            <TableHead>วัสดุ</TableHead>
                             <TableHead>หน่วย</TableHead>
                             <TableHead className="text-right">จำนวน</TableHead>
                             <TableHead className="text-center">จัดการ</TableHead>
@@ -256,7 +256,7 @@ export default function StockInManagement() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>สินค้า</Label>
+              <Label>วัสดุ</Label>
               <Input value={editItem ? getProductName(editItem.product_id) : ""} disabled />
             </div>
             <div>
@@ -282,7 +282,7 @@ export default function StockInManagement() {
             <AlertDialogDescription>
               ต้องการลบรายการ {deleteItem ? getProductName(deleteItem.product_id) : ""} ?
               <span className="block mt-1 text-destructive font-medium">
-                การลบจะหักสต็อกสินค้าอัตโนมัติ
+                การลบจะหักสต็อกวัสดุอัตโนมัติ
               </span>
             </AlertDialogDescription>
           </AlertDialogHeader>

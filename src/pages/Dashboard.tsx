@@ -101,7 +101,7 @@ export default function Dashboard() {
   }
 
   const statsCards = [
-    { title: "สินค้าทั้งหมด", value: stats.totalProducts.toLocaleString(), icon: Package, color: "bg-primary" },
+    { title: "วัสดุทั้งหมด", value: stats.totalProducts.toLocaleString(), icon: Package, color: "bg-primary" },
     { title: "รับเข้าเดือนนี้", value: stats.totalIn.toLocaleString(), icon: PackagePlus, color: "bg-success" },
     { title: "เบิกออกเดือนนี้", value: stats.totalOut.toLocaleString(), icon: PackageMinus, color: "bg-accent" },
     { title: "ต่ำกว่าเกณฑ์", value: stats.lowStockCount.toLocaleString(), icon: AlertTriangle, color: "bg-destructive" },
@@ -168,14 +168,14 @@ export default function Dashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-warning" />
-              สินค้าต่ำกว่าเกณฑ์
+              วัสดุต่ำกว่าเกณฑ์
             </CardTitle>
-            <CardDescription>สินค้าที่ต้องสั่งซื้อเพิ่มเติม</CardDescription>
+            <CardDescription>วัสดุที่ต้องสั่งซื้อเพิ่มเติม</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {stats.lowStock.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">ไม่มีสินค้าต่ำกว่าเกณฑ์</p>
+                <p className="text-sm text-muted-foreground text-center py-4">ไม่มีวัสดุต่ำกว่าเกณฑ์</p>
               )}
               {stats.lowStock.map((item) => (
                 <div key={item.id} className="space-y-2">

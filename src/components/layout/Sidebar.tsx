@@ -49,12 +49,12 @@ const menuItems: MenuSection[] = [
     ],
   },
   {
-    title: "การจัดการสินค้า",
+    title: "การจัดการวัสดุ",
     items: [
-      { name: "ข้อมูลสินค้า", path: "/products", icon: Package, roles: ["admin"] },
-      { name: "รับเข้าสินค้า", path: "/stock-in", icon: PackagePlus, roles: ["admin"] },
+      { name: "ข้อมูลวัสดุ", path: "/products", icon: Package, roles: ["admin"] },
+      { name: "รับเข้าวัสดุ", path: "/stock-in", icon: PackagePlus, roles: ["admin"] },
       { name: "จัดการรายการรับ", path: "/stock-in-manage", icon: ClipboardList, roles: ["admin"] },
-      { name: "เบิกสินค้า", path: "/stock-out", icon: PackageMinus },
+      { name: "เบิกวัสดุ", path: "/stock-out", icon: PackageMinus },
       { name: "จัดการรายการเบิก", path: "/stock-out-manage", icon: ClipboardCheck, roles: ["admin"] },
     ],
   },
@@ -62,7 +62,7 @@ const menuItems: MenuSection[] = [
     title: "ข้อมูลหลัก",
     roles: ["admin"],
     items: [
-      { name: "ประเภทสินค้า", path: "/categories", icon: Layers },
+      { name: "ประเภทวัสดุ", path: "/categories", icon: Layers },
       { name: "หน่วยนับ", path: "/units", icon: Ruler },
       { name: "บริษัท/ผู้ขาย", path: "/companies", icon: Building2 },
       { name: "หน่วยงานเบิก", path: "/departments", icon: Users },

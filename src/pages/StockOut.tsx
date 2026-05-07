@@ -107,7 +107,7 @@ export default function StockOut() {
 
   const handleAddItem = () => {
     if (!selectedProduct || !quantity) {
-      toast({ variant: "destructive", title: "กรุณาเลือกสินค้าและระบุจำนวน" });
+      toast({ variant: "destructive", title: "กรุณาเลือกวัสดุและระบุจำนวน" });
       return;
     }
     const product = products.find((p) => p.id === selectedProduct);
@@ -115,7 +115,7 @@ export default function StockOut() {
     const stock = parseInt(product.stock) || 0;
     const qty = parseInt(quantity);
     if (qty > stock) {
-      toast({ variant: "destructive", title: "จำนวนเกินกว่าสินค้าคงเหลือ" });
+      toast({ variant: "destructive", title: "จำนวนเกินกว่าวัสดุคงเหลือ" });
       return;
     }
     setItems([...items, {
@@ -182,7 +182,7 @@ export default function StockOut() {
           }
         }
       }
-      toast({ title: "จ่ายสินค้าและตัดสต็อกสำเร็จ" });
+      toast({ title: "จ่ายวัสดุและตัดสต็อกสำเร็จ" });
       setItems(items.map(i => ({ ...i, status: "dispensed" })));
     } catch (e: any) {
       toast({ variant: "destructive", title: "เกิดข้อผิดพลาด", description: e.message });
@@ -203,7 +203,7 @@ export default function StockOut() {
       <div className="flex items-center justify-between print:hidden">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <PackageMinus className="h-5 w-5" />
-          {isEditMode ? `จ่ายสินค้า - ใบเบิก ${editReqNo}` : "เบิกสินค้า"}
+          {isEditMode ? `จ่ายวัสดุ - ใบเบิก ${editReqNo}` : "เบิกวัสดุ"}
           {isEditMode && (
             <span className={`ml-2 text-sm font-normal px-2 py-0.5 rounded ${items.every(i => i.status === "dispensed") ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
               {items.every(i => i.status === "dispensed") ? "จ่ายของแล้ว" : "รอจ่าย"}
@@ -367,9 +367,9 @@ export default function StockOut() {
           <div className="rounded-lg border p-3 bg-muted/30 mb-3 print:hidden">
             <div className="grid gap-3 md:grid-cols-4 items-end">
               <div className="md:col-span-2">
-                <Label className="text-xs mb-1 block">เลือกสินค้า</Label>
+                <Label className="text-xs mb-1 block">เลือกวัสดุ</Label>
                 <Select value={selectedProduct} onValueChange={setSelectedProduct}>
-                  <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="เลือกสินค้า" /></SelectTrigger>
+                  <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="เลือกวัสดุ" /></SelectTrigger>
                   <SelectContent>
                     {products.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name} (คงเหลือ: {p.stock || 0})</SelectItem>))}
                   </SelectContent>

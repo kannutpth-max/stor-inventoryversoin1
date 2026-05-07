@@ -17,16 +17,16 @@ import { useSheetData } from "@/hooks/useGoogleSheets";
 import { exportToExcel, exportToPDF, buildReportData, exportStockCardToExcel, exportStockCardToPDF, exportStockBalanceToExcel, exportStockBalanceToPDF } from "@/lib/exportReport";
 
 const reportTypes = [
-  { id: "daily", name: "รายงานประจำวัน", description: "สรุปการเคลื่อนไหวสินค้าประจำวัน" },
-  { id: "monthly", name: "รายงานประจำเดือน", description: "สรุปการเคลื่อนไหวสินค้าประจำเดือน" },
-  { id: "stock-balance", name: "รายงานสินค้าคงคลัง", description: "ยอดยกมาประจำเดือน" },
-  { id: "stock-card", name: "รายงานสต็อกการ์ด", description: "ประวัติการเคลื่อนไหวแต่ละสินค้า" },
-  { id: "product-movement", name: "รายงานการรับ-จ่าย", description: "รายละเอียดการรับจ่ายแต่ละสินค้า" },
-  { id: "by-company", name: "รับสินค้าแยกตามบริษัท", description: "รายงานการรับสินค้าจำแนกตามบริษัท" },
-  { id: "by-department", name: "เบิกสินค้าแยกตามหน่วยงาน", description: "รายงานการเบิกจำแนกตามหน่วยงาน" },
-  { id: "stock-in-history", name: "ประวัติการรับเข้า", description: "แยกตามสินค้า" },
+  { id: "daily", name: "รายงานประจำวัน", description: "สรุปการเคลื่อนไหววัสดุประจำวัน" },
+  { id: "monthly", name: "รายงานประจำเดือน", description: "สรุปการเคลื่อนไหววัสดุประจำเดือน" },
+  { id: "stock-balance", name: "รายงานวัสดุคงคลัง", description: "ยอดยกมาประจำเดือน" },
+  { id: "stock-card", name: "รายงานสต็อกการ์ด", description: "ประวัติการเคลื่อนไหวแต่ละวัสดุ" },
+  { id: "product-movement", name: "รายงานการรับ-จ่าย", description: "รายละเอียดการรับจ่ายแต่ละวัสดุ" },
+  { id: "by-company", name: "รับวัสดุแยกตามบริษัท", description: "รายงานการรับวัสดุจำแนกตามบริษัท" },
+  { id: "by-department", name: "เบิกวัสดุแยกตามหน่วยงาน", description: "รายงานการเบิกจำแนกตามหน่วยงาน" },
+  { id: "stock-in-history", name: "ประวัติการรับเข้า", description: "แยกตามวัสดุ" },
   { id: "stock-out-history", name: "ประวัติการเบิกจ่าย", description: "แยกตามวัสดุ" },
-  { id: "low-stock", name: "สินค้าต่ำกว่าเกณฑ์", description: "รายการสินค้าที่ต่ำกว่าเกณฑ์ขั้นต่ำ" },
+  { id: "low-stock", name: "วัสดุต่ำกว่าเกณฑ์", description: "รายการวัสดุที่ต่ำกว่าเกณฑ์ขั้นต่ำ" },
 ];
 
 interface ProductItem { id: string; name: string; }
@@ -225,10 +225,10 @@ export default function Reports() {
                   </Popover>
                 </div>
                 <div className="space-y-2">
-                  <Label>สินค้าเริ่มต้น</Label>
+                  <Label>วัสดุเริ่มต้น</Label>
                   <Select value={productFrom} onValueChange={(v) => setProductFrom(v === "all" ? "" : v)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="เลือกสินค้า" />
+                      <SelectValue placeholder="เลือกวัสดุ" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">-- ทั้งหมด --</SelectItem>
@@ -241,10 +241,10 @@ export default function Reports() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>สินค้าสิ้นสุด</Label>
+                  <Label>วัสดุสิ้นสุด</Label>
                   <Select value={productTo} onValueChange={(v) => setProductTo(v === "all" ? "" : v)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="เลือกสินค้า" />
+                      <SelectValue placeholder="เลือกวัสดุ" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">-- ทั้งหมด --</SelectItem>

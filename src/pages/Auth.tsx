@@ -107,7 +107,7 @@ export default function Auth() {
               </Button>
 
               <div className="text-xs text-muted-foreground text-center space-y-1">
-                <p>ผู้ใช้ทั่วไป: กรอกชื่อผู้ใช้เท่านั้น (เข้าถึงได้เฉพาะหน้าภาพรวมและเบิกสินค้า)</p>
+                <p>ผู้ใช้ทั่วไป: กรอกชื่อผู้ใช้เท่านั้น (เข้าถึงได้เฉพาะหน้าภาพรวมและเบิกวัสดุ)</p>
                 <p>ผู้ดูแลระบบ: กรอก Admin พร้อมรหัสผ่าน</p>
               </div>
             </form>

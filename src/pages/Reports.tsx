@@ -74,10 +74,15 @@ export default function Reports() {
         return true;
       } catch { return true; }
     };
+    const sortedIds = [...sheetProducts].map(p => p.id).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    const fromIdx = productFrom ? sortedIds.indexOf(productFrom) : -1;
+    const toIdx = productTo ? sortedIds.indexOf(productTo) : -1;
+    const lowerIdx = fromIdx >= 0 ? fromIdx : 0;
+    const upperIdx = toIdx >= 0 ? toIdx : sortedIds.length - 1;
+    const allowedIds = new Set(sortedIds.slice(Math.min(lowerIdx, upperIdx), Math.max(lowerIdx, upperIdx) + 1));
     const filterProduct = (pid: string) => {
-      if (productFrom && pid < productFrom) return false;
-      if (productTo && pid > productTo) return false;
-      return true;
+      if (!productFrom && !productTo) return true;
+      return allowedIds.has(pid);
     };
     let filteredStockIn = (stockIn as any[]).filter(r => filterDate(r.date) && filterProduct(r.product_id));
     let filteredStockOut = (stockOut as any[]).filter(r => filterDate(r.date) && filterProduct(r.product_id));

@@ -29,7 +29,7 @@ const reportTypes = [
   { id: "low-stock", name: "วัสดุต่ำกว่าเกณฑ์", description: "รายการวัสดุที่ต่ำกว่าเกณฑ์ขั้นต่ำ" },
 ];
 
-interface ProductItem { id: string; name: string; }
+interface ProductItem { id: string; name: string; category_id?: string; }
 interface CategoryItem { id: string; name: string; }
 interface UnitItem { id: string; name: string; }
 interface CompanyItem { id: string; name: string; }
@@ -52,6 +52,7 @@ export default function Reports() {
   const [productTo, setProductTo] = useState("");
   const [selectedCompany, setSelectedCompany] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [showPreview, setShowPreview] = useState(false);
   const { toast } = useToast();
 
@@ -74,16 +75,17 @@ export default function Reports() {
         return true;
       } catch { return true; }
     };
-    const sortedIds = [...sheetProducts].map(p => p.id).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    const categoryFilteredProducts = selectedCategory
+      ? (sheetProducts as any[]).filter(p => p.category_id === selectedCategory)
+      : (sheetProducts as any[]);
+    const sortedIds = categoryFilteredProducts.map(p => p.id).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
     const fromIdx = productFrom ? sortedIds.indexOf(productFrom) : -1;
     const toIdx = productTo ? sortedIds.indexOf(productTo) : -1;
     const lowerIdx = fromIdx >= 0 ? fromIdx : 0;
     const upperIdx = toIdx >= 0 ? toIdx : sortedIds.length - 1;
-    const allowedIds = new Set(sortedIds.slice(Math.min(lowerIdx, upperIdx), Math.max(lowerIdx, upperIdx) + 1));
-    const filterProduct = (pid: string) => {
-      if (!productFrom && !productTo) return true;
-      return allowedIds.has(pid);
-    };
+    const rangeIds = new Set(sortedIds.slice(Math.min(lowerIdx, upperIdx), Math.max(lowerIdx, upperIdx) + 1));
+    const allowedIds = new Set(sortedIds.filter(id => (!productFrom && !productTo) ? true : rangeIds.has(id)));
+    const filterProduct = (pid: string) => allowedIds.has(pid);
     let filteredStockIn = (stockIn as any[]).filter(r => filterDate(r.date) && filterProduct(r.product_id));
     let filteredStockOut = (stockOut as any[]).filter(r => filterDate(r.date) && filterProduct(r.product_id));
     if (selectedCompany) {
@@ -93,7 +95,7 @@ export default function Reports() {
       filteredStockOut = filteredStockOut.filter(r => r.department_id === selectedDepartment);
     }
     return {
-      products: (sheetProducts as any[]).filter(p => filterProduct(p.id)),
+      products: categoryFilteredProducts.filter(p => filterProduct(p.id)),
       stockIn: filteredStockIn,
       stockOut: filteredStockOut,
     };
@@ -230,6 +232,20 @@ export default function Reports() {
                   </Popover>
                 </div>
                 <div className="space-y-2">
+                  <Label>ประเภทวัสดุ</Label>
+                  <Select value={selectedCategory || "all"} onValueChange={(v) => { setSelectedCategory(v === "all" ? "" : v); setProductFrom(""); setProductTo(""); }}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="เลือกประเภท" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">-- ทั้งหมด --</SelectItem>
+                      {categories.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
                   <Label>วัสดุเริ่มต้น</Label>
                   <Select value={productFrom} onValueChange={(v) => setProductFrom(v === "all" ? "" : v)}>
                     <SelectTrigger>
@@ -237,7 +253,7 @@ export default function Reports() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">-- ทั้งหมด --</SelectItem>
-                      {sheetProducts.map((product) => (
+                      {(selectedCategory ? sheetProducts.filter((p: any) => p.category_id === selectedCategory) : sheetProducts).map((product) => (
                         <SelectItem key={product.id} value={product.id}>
                           {product.id} - {product.name}
                         </SelectItem>
@@ -253,7 +269,7 @@ export default function Reports() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">-- ทั้งหมด --</SelectItem>
-                      {sheetProducts.map((product) => (
+                      {(selectedCategory ? sheetProducts.filter((p: any) => p.category_id === selectedCategory) : sheetProducts).map((product) => (
                         <SelectItem key={product.id} value={product.id}>
                           {product.id} - {product.name}
                         </SelectItem>
@@ -336,6 +352,7 @@ export default function Reports() {
                     productTo={productTo}
                     selectedCompany={selectedCompany}
                     selectedDepartment={selectedDepartment}
+                    selectedCategory={selectedCategory}
                   />
                 </div>
               ) : (

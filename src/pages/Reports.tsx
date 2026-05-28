@@ -95,7 +95,7 @@ export default function Reports() {
       filteredStockOut = filteredStockOut.filter(r => r.department_id === selectedDepartment);
     }
     return {
-      products: (sheetProducts as any[]).filter(p => filterProduct(p.id)),
+      products: categoryFilteredProducts.filter(p => filterProduct(p.id)),
       stockIn: filteredStockIn,
       stockOut: filteredStockOut,
     };

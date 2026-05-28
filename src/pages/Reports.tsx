@@ -52,6 +52,7 @@ export default function Reports() {
   const [productTo, setProductTo] = useState("");
   const [selectedCompany, setSelectedCompany] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [showPreview, setShowPreview] = useState(false);
   const { toast } = useToast();
 

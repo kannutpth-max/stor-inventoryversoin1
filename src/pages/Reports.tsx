@@ -29,7 +29,7 @@ const reportTypes = [
   { id: "low-stock", name: "วัสดุต่ำกว่าเกณฑ์", description: "รายการวัสดุที่ต่ำกว่าเกณฑ์ขั้นต่ำ" },
 ];
 
-interface ProductItem { id: string; name: string; }
+interface ProductItem { id: string; name: string; category_id?: string; }
 interface CategoryItem { id: string; name: string; }
 interface UnitItem { id: string; name: string; }
 interface CompanyItem { id: string; name: string; }

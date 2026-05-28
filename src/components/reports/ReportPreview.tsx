@@ -23,9 +23,10 @@ interface ReportPreviewProps {
   productTo: string;
   selectedCompany?: string;
   selectedDepartment?: string;
+  selectedCategory?: string;
 }
 
-export default function ReportPreview({ reportType, dateFrom, dateTo, productFrom, productTo, selectedCompany, selectedDepartment }: ReportPreviewProps) {
+export default function ReportPreview({ reportType, dateFrom, dateTo, productFrom, productTo, selectedCompany, selectedDepartment, selectedCategory }: ReportPreviewProps) {
   const { data: products = [], isLoading: loadingProducts } = useSheetData<Product>("products");
   const { data: categories = [] } = useSheetData<Category>("categories");
   const { data: units = [] } = useSheetData<Unit>("units");

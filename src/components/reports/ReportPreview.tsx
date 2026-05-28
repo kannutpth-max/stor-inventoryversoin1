@@ -61,21 +61,20 @@ export default function ReportPreview({ reportType, dateFrom, dateTo, productFro
     } catch { return true; }
   };
 
-  const sortedProductIds = [...products].map(p => p.id).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  const categoryFilteredProducts = selectedCategory ? products.filter(p => p.category_id === selectedCategory) : products;
+  const sortedProductIds = [...categoryFilteredProducts].map(p => p.id).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
   const fromIdx = productFrom ? sortedProductIds.indexOf(productFrom) : -1;
   const toIdx = productTo ? sortedProductIds.indexOf(productTo) : -1;
   const lowerIdx = fromIdx >= 0 ? fromIdx : 0;
   const upperIdx = toIdx >= 0 ? toIdx : sortedProductIds.length - 1;
-  const allowedIds = new Set(sortedProductIds.slice(Math.min(lowerIdx, upperIdx), Math.max(lowerIdx, upperIdx) + 1));
+  const rangeIds = new Set(sortedProductIds.slice(Math.min(lowerIdx, upperIdx), Math.max(lowerIdx, upperIdx) + 1));
+  const allowedIds = new Set(sortedProductIds.filter(id => (!productFrom && !productTo) ? true : rangeIds.has(id)));
 
-  const filterByProduct = (productId: string) => {
-    if (!productFrom && !productTo) return true;
-    return allowedIds.has(productId);
-  };
+  const filterByProduct = (productId: string) => allowedIds.has(productId);
 
   const filteredStockIn = stockIn.filter(r => filterByDate(r.date) && filterByProduct(r.product_id) && (!selectedCompany || r.company_id === selectedCompany));
   const filteredStockOut = stockOut.filter(r => filterByDate(r.date) && filterByProduct(r.product_id) && (!selectedDepartment || r.department_id === selectedDepartment));
-  const filteredProducts = products.filter(p => filterByProduct(p.id));
+  const filteredProducts = categoryFilteredProducts.filter(p => filterByProduct(p.id));
 
   if (isLoading) {
     return (

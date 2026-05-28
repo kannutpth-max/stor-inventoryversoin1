@@ -232,6 +232,20 @@ export default function Reports() {
                   </Popover>
                 </div>
                 <div className="space-y-2">
+                  <Label>ประเภทวัสดุ</Label>
+                  <Select value={selectedCategory || "all"} onValueChange={(v) => { setSelectedCategory(v === "all" ? "" : v); setProductFrom(""); setProductTo(""); }}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="เลือกประเภท" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">-- ทั้งหมด --</SelectItem>
+                      {categories.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
                   <Label>วัสดุเริ่มต้น</Label>
                   <Select value={productFrom} onValueChange={(v) => setProductFrom(v === "all" ? "" : v)}>
                     <SelectTrigger>
@@ -239,7 +253,7 @@ export default function Reports() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">-- ทั้งหมด --</SelectItem>
-                      {sheetProducts.map((product) => (
+                      {(selectedCategory ? sheetProducts.filter((p: any) => p.category_id === selectedCategory) : sheetProducts).map((product) => (
                         <SelectItem key={product.id} value={product.id}>
                           {product.id} - {product.name}
                         </SelectItem>
@@ -255,7 +269,7 @@ export default function Reports() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">-- ทั้งหมด --</SelectItem>
-                      {sheetProducts.map((product) => (
+                      {(selectedCategory ? sheetProducts.filter((p: any) => p.category_id === selectedCategory) : sheetProducts).map((product) => (
                         <SelectItem key={product.id} value={product.id}>
                           {product.id} - {product.name}
                         </SelectItem>

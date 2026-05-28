@@ -352,6 +352,7 @@ export default function Reports() {
                     productTo={productTo}
                     selectedCompany={selectedCompany}
                     selectedDepartment={selectedDepartment}
+                    selectedCategory={selectedCategory}
                   />
                 </div>
               ) : (

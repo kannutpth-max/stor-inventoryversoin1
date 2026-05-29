@@ -168,16 +168,45 @@ export default function StockIn() {
             <h3 className="font-medium mb-4">เพิ่มรายการวัสดุ</h3>
             <div className="grid gap-4 md:grid-cols-5">
               <div className="md:col-span-2">
-                <Select value={selectedProduct} onValueChange={(val) => {
-                  setSelectedProduct(val);
-                  const p = products.find(prod => prod.id === val);
-                  if (p && p.price) setPrice(p.price);
-                }}>
-                  <SelectTrigger><SelectValue placeholder="เลือกวัสดุ" /></SelectTrigger>
-                  <SelectContent>
-                    {products.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}
-                  </SelectContent>
-                </Select>
+                <Popover open={productOpen} onOpenChange={setProductOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" role="combobox" className="w-full justify-between font-normal">
+                      <span className="truncate">
+                        {selectedProduct
+                          ? (() => {
+                              const p = products.find((pr) => pr.id === selectedProduct);
+                              return p ? `${p.id} - ${p.name}` : "เลือกวัสดุ";
+                            })()
+                          : "เลือกวัสดุ"}
+                      </span>
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="p-0 w-[--radix-popover-trigger-width]" align="start">
+                    <Command filter={(value, search) => (value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0)}>
+                      <CommandInput placeholder="พิมพ์รหัสหรือชื่อวัสดุ..." className="h-9" />
+                      <CommandList>
+                        <CommandEmpty>ไม่พบวัสดุ</CommandEmpty>
+                        <CommandGroup>
+                          {products.map((p) => (
+                            <CommandItem
+                              key={p.id}
+                              value={`${p.id} ${p.name}`}
+                              onSelect={() => {
+                                setSelectedProduct(p.id);
+                                if (p.price) setPrice(p.price);
+                                setProductOpen(false);
+                              }}
+                            >
+                              <Check className={cn("mr-2 h-4 w-4", selectedProduct === p.id ? "opacity-100" : "opacity-0")} />
+                              <span className="text-sm">{p.id} - {p.name}</span>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
               <Input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="จำนวน" />
               <Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="ราคา/หน่วย" />

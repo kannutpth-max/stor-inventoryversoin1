@@ -103,6 +103,42 @@ async function fetchWithRetry(url: string, init: RequestInit, label: string, max
   throw new Error(`Failed to ${label}`);
 }
 
+async function getSheetHeaders(accessToken: string, sheetId: string, sheetName: string): Promise<string[]> {
+  const res = await fetchWithRetry(
+    `${SHEETS_API}/${sheetId}/values/${encodeURIComponent(sheetName)}!1:1`,
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+    `read headers ${sheetName}`,
+  );
+  const data = await res.json();
+  const rows = data.values || [];
+  return rows[0] || [];
+}
+
+async function ensureHeaders(accessToken: string, sheetId: string, sheetName: string, requiredKeys: string[]): Promise<string[]> {
+  const existing = await getSheetHeaders(accessToken, sheetId, sheetName);
+  const missing = requiredKeys.filter((k) => k && !existing.includes(k));
+  if (missing.length === 0) return existing;
+  const newHeaders = [...existing, ...missing];
+  const range = `${sheetName}!1:1`;
+  const res = await fetch(
+    `${SHEETS_API}/${sheetId}/values/${encodeURIComponent(range)}?valueInputOption=RAW`,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ values: [newHeaders] }),
+    },
+  );
+  if (!res.ok) {
+    const err = await res.text();
+    console.error(`Failed to extend headers in ${sheetName}:`, err);
+    throw new Error("Failed to extend headers");
+  }
+  return newHeaders;
+}
+
 async function getSheetData(accessToken: string, sheetId: string, sheetName: string) {
   const res = await fetchWithRetry(
     `${SHEETS_API}/${sheetId}/values/${encodeURIComponent(sheetName)}`,
@@ -285,8 +321,9 @@ serve(async (req) => {
         break;
       }
       case "create": {
-        const headers = Object.keys(data!);
-        const values = headers.map((h) => sanitizeCellValue(data![h]));
+        const dataKeys = Object.keys(data!);
+        const headers = await ensureHeaders(accessToken, googleSheetId, sheet, dataKeys);
+        const values = headers.map((h) => sanitizeCellValue(data![h] ?? ""));
         result = await appendRow(accessToken, googleSheetId, sheet, values);
         break;
       }
@@ -299,8 +336,9 @@ serve(async (req) => {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
-        const headers = Object.keys(allRows[0]);
-        const values = headers.map((h) => sanitizeCellValue(data![h] ?? allRows[rowIndex][h] ?? ""));
+        const headers = await ensureHeaders(accessToken, googleSheetId, sheet, Object.keys(data!));
+        const existing = allRows[rowIndex];
+        const values = headers.map((h) => sanitizeCellValue(data![h] ?? existing[h] ?? ""));
         result = await updateRow(accessToken, googleSheetId, sheet, rowIndex, values);
         break;
       }

@@ -54,6 +54,7 @@ export default function StockOut() {
   const [position, setPosition] = useState("");
   const [items, setItems] = useState<StockOutItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState("");
+  const [productOpen, setProductOpen] = useState(false);
   const [quantity, setQuantity] = useState("");
   const [loaded, setLoaded] = useState(false);
   const { toast } = useToast();

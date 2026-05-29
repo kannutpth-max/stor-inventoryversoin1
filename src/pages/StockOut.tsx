@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Plus, Trash2, PackageMinus, Calendar, Loader2, Printer, Save } from "lucide-react";
+import { Plus, Trash2, PackageMinus, Calendar, Loader2, Printer, Save, Check, ChevronsUpDown } from "lucide-react";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useSearchParams, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Plus, Trash2, PackagePlus, Calendar, FileText, Loader2 } from "lucide-react";
+import { Plus, Trash2, PackagePlus, Calendar, FileText, Loader2, Check, ChevronsUpDown } from "lucide-react";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

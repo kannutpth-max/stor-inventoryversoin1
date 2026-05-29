@@ -40,6 +40,7 @@ export default function StockIn() {
   const [companyId, setCompanyId] = useState("");
   const [items, setItems] = useState<StockInItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState("");
+  const [productOpen, setProductOpen] = useState(false);
   const [quantity, setQuantity] = useState("");
   const [price, setPrice] = useState("");
   const { toast } = useToast();

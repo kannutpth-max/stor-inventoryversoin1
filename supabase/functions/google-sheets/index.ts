@@ -321,8 +321,9 @@ serve(async (req) => {
         break;
       }
       case "create": {
-        const headers = Object.keys(data!);
-        const values = headers.map((h) => sanitizeCellValue(data![h]));
+        const dataKeys = Object.keys(data!);
+        const headers = await ensureHeaders(accessToken, googleSheetId, sheet, dataKeys);
+        const values = headers.map((h) => sanitizeCellValue(data![h] ?? ""));
         result = await appendRow(accessToken, googleSheetId, sheet, values);
         break;
       }
@@ -335,8 +336,9 @@ serve(async (req) => {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
-        const headers = Object.keys(allRows[0]);
-        const values = headers.map((h) => sanitizeCellValue(data![h] ?? allRows[rowIndex][h] ?? ""));
+        const headers = await ensureHeaders(accessToken, googleSheetId, sheet, Object.keys(data!));
+        const existing = allRows[rowIndex];
+        const values = headers.map((h) => sanitizeCellValue(data![h] ?? existing[h] ?? ""));
         result = await updateRow(accessToken, googleSheetId, sheet, rowIndex, values);
         break;
       }

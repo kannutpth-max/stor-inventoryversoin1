@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Plus, Trash2, PackagePlus, Calendar, FileText, Loader2, Check, ChevronsUpDown } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
@@ -17,22 +18,34 @@ import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { useSheetData, useSheetCreate, useSheetUpdate } from "@/hooks/useGoogleSheets";
+import { useSheetData, useSheetCreate, useSheetUpdate, useSheetDelete } from "@/hooks/useGoogleSheets";
 
 interface Company { id: string; name: string; }
 interface Product { id: string; name: string; unit_id: string; stock: string; price: string; }
 interface Unit { id: string; name: string; }
 
 interface StockInItem {
-  id: string; productId: string; productName: string; unit: string;
+  id: string; recordId?: string; productId: string; productName: string; unit: string;
   quantity: number; price: number;
 }
 
+interface StockInRecord {
+  id: string; date: string; invoice_no: string; company_id: string;
+  product_id: string; quantity: string; created_at: string;
+}
+
 export default function StockIn() {
+  const [searchParams] = useSearchParams();
+  const editInvNo = searchParams.get("edit");
+  const isEditMode = !!editInvNo;
+
   const { data: companies = [] } = useSheetData<Company>("companies");
   const { data: products = [] } = useSheetData<Product>("products");
   const { data: units = [] } = useSheetData<Unit>("units");
+  const { data: stockIns = [] } = useSheetData<StockInRecord>("stock_in");
   const createMutation = useSheetCreate("stock_in");
+  const updateStockIn = useSheetUpdate("stock_in");
+  const deleteStockIn = useSheetDelete("stock_in");
   const updateProduct = useSheetUpdate("products");
 
   const [date, setDate] = useState<Date>(new Date());
@@ -43,7 +56,34 @@ export default function StockIn() {
   const [productOpen, setProductOpen] = useState(false);
   const [quantity, setQuantity] = useState("");
   const [price, setPrice] = useState("");
+  const [loaded, setLoaded] = useState(false);
   const { toast } = useToast();
+
+  // Load existing invoice in edit mode
+  useEffect(() => {
+    if (isEditMode && stockIns.length > 0 && products.length > 0 && !loaded) {
+      const records = stockIns.filter(r => r.invoice_no === editInvNo);
+      if (records.length > 0) {
+        const first = records[0];
+        setDate(new Date(first.date));
+        setInvoiceNo(first.invoice_no);
+        setCompanyId(first.company_id);
+        setItems(records.map(r => {
+          const product = products.find(p => p.id === r.product_id);
+          return {
+            id: `item-${r.id}`,
+            recordId: r.id,
+            productId: r.product_id,
+            productName: product?.name || r.product_id,
+            unit: product ? units.find(u => u.id === product.unit_id)?.name || product.unit_id : "-",
+            quantity: parseInt(r.quantity) || 0,
+            price: parseFloat(product?.price || "0") || 0,
+          };
+        }));
+        setLoaded(true);
+      }
+    }
+  }, [isEditMode, editInvNo, stockIns, products, units, loaded]);
 
   const getUnitName = (unitId: string) => units.find(u => u.id === unitId)?.name || unitId;
 
@@ -70,7 +110,52 @@ export default function StockIn() {
       return;
     }
     try {
-      // สร้างรายการรับเข้าทั้งหมดก่อน
+      if (isEditMode) {
+        // หา records เดิมของใบนี้
+        const originalRecords = stockIns.filter(r => r.invoice_no === editInvNo);
+        const currentRecordIds = new Set(items.map(i => i.recordId).filter(Boolean));
+
+        // ลบ records ที่ถูกเอาออก
+        for (const r of originalRecords) {
+          if (!currentRecordIds.has(r.id)) {
+            await deleteStockIn.mutateAsync(r.id);
+          }
+        }
+
+        // อัพเดท / สร้าง
+        for (const item of items) {
+          if (item.recordId) {
+            const orig = originalRecords.find(r => r.id === item.recordId);
+            if (orig) {
+              await updateStockIn.mutateAsync({
+                id: item.recordId,
+                data: {
+                  ...orig,
+                  date: format(date, "yyyy-MM-dd"),
+                  invoice_no: invoiceNo,
+                  company_id: companyId,
+                  product_id: item.productId,
+                  quantity: item.quantity.toString(),
+                },
+              });
+            }
+          } else {
+            await createMutation.mutateAsync({
+              id: `SI-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+              date: format(date, "yyyy-MM-dd"),
+              invoice_no: invoiceNo,
+              company_id: companyId,
+              product_id: item.productId,
+              quantity: item.quantity.toString(),
+              created_at: new Date().toISOString(),
+            });
+          }
+        }
+        toast({ title: "แก้ไขใบส่งของสำเร็จ" });
+        return;
+      }
+
+      // โหมดสร้างใหม่
       for (const item of items) {
         await createMutation.mutateAsync({
           id: `SI-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
@@ -90,7 +175,6 @@ export default function StockIn() {
         stockChanges.set(item.productId, prev + item.quantity);
       }
 
-      // อัพเดทสต็อกวัสดุทีละรายการ พร้อมหน่วงเวลาเล็กน้อย
       for (const [productId, addQty] of stockChanges) {
         const product = products.find(p => p.id === productId);
         if (product) {
@@ -101,14 +185,12 @@ export default function StockIn() {
               data: { ...product, stock: (currentStock + addQty).toString() },
             });
           } catch (e) {
-            console.warn(`Failed to update stock for ${productId}, retrying...`);
             await new Promise(r => setTimeout(r, 1000));
             await updateProduct.mutateAsync({
               id: product.id,
               data: { ...product, stock: (currentStock + addQty).toString() },
             });
           }
-          // หน่วงเวลาระหว่างการอัพเดทแต่ละวัสดุ
           await new Promise(r => setTimeout(r, 500));
         }
       }
@@ -127,7 +209,7 @@ export default function StockIn() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <PackagePlus className="h-5 w-5" />
-            รับเข้าวัสดุ
+            {isEditMode ? `แก้ไขใบส่งของ ${editInvNo}` : "รับเข้าวัสดุ"}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -246,7 +328,7 @@ export default function StockIn() {
             <Button onClick={handleSave} size="lg" disabled={createMutation.isPending}>
               {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               <PackagePlus className="mr-2 h-4 w-4" />
-              บันทึกรายการรับเข้า
+              {isEditMode ? "บันทึกการแก้ไข" : "บันทึกรายการรับเข้า"}
             </Button>
           </div>
         </CardContent>

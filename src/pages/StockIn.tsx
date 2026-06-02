@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Plus, Trash2, PackagePlus, Calendar, FileText, Loader2, Check, ChevronsUpDown } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
@@ -17,22 +18,34 @@ import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { useSheetData, useSheetCreate, useSheetUpdate } from "@/hooks/useGoogleSheets";
+import { useSheetData, useSheetCreate, useSheetUpdate, useSheetDelete } from "@/hooks/useGoogleSheets";
 
 interface Company { id: string; name: string; }
 interface Product { id: string; name: string; unit_id: string; stock: string; price: string; }
 interface Unit { id: string; name: string; }
 
 interface StockInItem {
-  id: string; productId: string; productName: string; unit: string;
+  id: string; recordId?: string; productId: string; productName: string; unit: string;
   quantity: number; price: number;
 }
 
+interface StockInRecord {
+  id: string; date: string; invoice_no: string; company_id: string;
+  product_id: string; quantity: string; created_at: string;
+}
+
 export default function StockIn() {
+  const [searchParams] = useSearchParams();
+  const editInvNo = searchParams.get("edit");
+  const isEditMode = !!editInvNo;
+
   const { data: companies = [] } = useSheetData<Company>("companies");
   const { data: products = [] } = useSheetData<Product>("products");
   const { data: units = [] } = useSheetData<Unit>("units");
+  const { data: stockIns = [] } = useSheetData<StockInRecord>("stock_in");
   const createMutation = useSheetCreate("stock_in");
+  const updateStockIn = useSheetUpdate("stock_in");
+  const deleteStockIn = useSheetDelete("stock_in");
   const updateProduct = useSheetUpdate("products");
 
   const [date, setDate] = useState<Date>(new Date());
@@ -43,7 +56,34 @@ export default function StockIn() {
   const [productOpen, setProductOpen] = useState(false);
   const [quantity, setQuantity] = useState("");
   const [price, setPrice] = useState("");
+  const [loaded, setLoaded] = useState(false);
   const { toast } = useToast();
+
+  // Load existing invoice in edit mode
+  useEffect(() => {
+    if (isEditMode && stockIns.length > 0 && products.length > 0 && !loaded) {
+      const records = stockIns.filter(r => r.invoice_no === editInvNo);
+      if (records.length > 0) {
+        const first = records[0];
+        setDate(new Date(first.date));
+        setInvoiceNo(first.invoice_no);
+        setCompanyId(first.company_id);
+        setItems(records.map(r => {
+          const product = products.find(p => p.id === r.product_id);
+          return {
+            id: `item-${r.id}`,
+            recordId: r.id,
+            productId: r.product_id,
+            productName: product?.name || r.product_id,
+            unit: product ? units.find(u => u.id === product.unit_id)?.name || product.unit_id : "-",
+            quantity: parseInt(r.quantity) || 0,
+            price: parseFloat(product?.price || "0") || 0,
+          };
+        }));
+        setLoaded(true);
+      }
+    }
+  }, [isEditMode, editInvNo, stockIns, products, units, loaded]);
 
   const getUnitName = (unitId: string) => units.find(u => u.id === unitId)?.name || unitId;
 

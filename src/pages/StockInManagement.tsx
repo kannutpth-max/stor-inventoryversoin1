@@ -88,19 +88,6 @@ export default function StockInManagement() {
   const handleEdit = async () => {
     if (!editItem || !editQuantity) return;
     try {
-      // Adjust product stock: remove old qty, add new qty
-      const product = getProduct(editItem.product_id);
-      if (product) {
-        const currentStock = parseInt(product.stock) || 0;
-        const oldQty = parseInt(editItem.quantity) || 0;
-        const newQty = parseInt(editQuantity) || 0;
-        const adjustedStock = currentStock - oldQty + newQty;
-        await updateProduct.mutateAsync({
-          id: product.id,
-          data: { ...product, stock: Math.max(0, adjustedStock).toString() },
-        });
-      }
-
       await updateStockIn.mutateAsync({
         id: editItem.id,
         data: { ...editItem, quantity: editQuantity },
@@ -115,17 +102,6 @@ export default function StockInManagement() {
   const handleDelete = async () => {
     if (!deleteItem) return;
     try {
-      // Deduct stock for deleted record
-      const product = getProduct(deleteItem.product_id);
-      if (product) {
-        const currentStock = parseInt(product.stock) || 0;
-        const qty = parseInt(deleteItem.quantity) || 0;
-        await updateProduct.mutateAsync({
-          id: product.id,
-          data: { ...product, stock: Math.max(0, currentStock - qty).toString() },
-        });
-      }
-
       await deleteStockIn.mutateAsync(deleteItem.id);
       toast({ title: "ลบรายการสำเร็จ" });
       setDeleteItem(null);
@@ -281,8 +257,8 @@ export default function StockInManagement() {
             <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
             <AlertDialogDescription>
               ต้องการลบรายการ {deleteItem ? getProductName(deleteItem.product_id) : ""} ?
-              <span className="block mt-1 text-destructive font-medium">
-                การลบจะหักสต็อกวัสดุอัตโนมัติ
+              <span className="block mt-1 text-muted-foreground text-sm">
+                สต็อกจะคำนวณใหม่อัตโนมัติจากประวัติที่เหลือ
               </span>
             </AlertDialogDescription>
           </AlertDialogHeader>

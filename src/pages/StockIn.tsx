@@ -110,7 +110,52 @@ export default function StockIn() {
       return;
     }
     try {
-      // สร้างรายการรับเข้าทั้งหมดก่อน
+      if (isEditMode) {
+        // หา records เดิมของใบนี้
+        const originalRecords = stockIns.filter(r => r.invoice_no === editInvNo);
+        const currentRecordIds = new Set(items.map(i => i.recordId).filter(Boolean));
+
+        // ลบ records ที่ถูกเอาออก
+        for (const r of originalRecords) {
+          if (!currentRecordIds.has(r.id)) {
+            await deleteStockIn.mutateAsync(r.id);
+          }
+        }
+
+        // อัพเดท / สร้าง
+        for (const item of items) {
+          if (item.recordId) {
+            const orig = originalRecords.find(r => r.id === item.recordId);
+            if (orig) {
+              await updateStockIn.mutateAsync({
+                id: item.recordId,
+                data: {
+                  ...orig,
+                  date: format(date, "yyyy-MM-dd"),
+                  invoice_no: invoiceNo,
+                  company_id: companyId,
+                  product_id: item.productId,
+                  quantity: item.quantity.toString(),
+                },
+              });
+            }
+          } else {
+            await createMutation.mutateAsync({
+              id: `SI-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+              date: format(date, "yyyy-MM-dd"),
+              invoice_no: invoiceNo,
+              company_id: companyId,
+              product_id: item.productId,
+              quantity: item.quantity.toString(),
+              created_at: new Date().toISOString(),
+            });
+          }
+        }
+        toast({ title: "แก้ไขใบส่งของสำเร็จ" });
+        return;
+      }
+
+      // โหมดสร้างใหม่
       for (const item of items) {
         await createMutation.mutateAsync({
           id: `SI-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
@@ -130,7 +175,6 @@ export default function StockIn() {
         stockChanges.set(item.productId, prev + item.quantity);
       }
 
-      // อัพเดทสต็อกวัสดุทีละรายการ พร้อมหน่วงเวลาเล็กน้อย
       for (const [productId, addQty] of stockChanges) {
         const product = products.find(p => p.id === productId);
         if (product) {
@@ -141,14 +185,12 @@ export default function StockIn() {
               data: { ...product, stock: (currentStock + addQty).toString() },
             });
           } catch (e) {
-            console.warn(`Failed to update stock for ${productId}, retrying...`);
             await new Promise(r => setTimeout(r, 1000));
             await updateProduct.mutateAsync({
               id: product.id,
               data: { ...product, stock: (currentStock + addQty).toString() },
             });
           }
-          // หน่วงเวลาระหว่างการอัพเดทแต่ละวัสดุ
           await new Promise(r => setTimeout(r, 500));
         }
       }

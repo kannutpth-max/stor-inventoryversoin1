@@ -328,7 +328,7 @@ export default function StockIn() {
             <Button onClick={handleSave} size="lg" disabled={createMutation.isPending}>
               {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               <PackagePlus className="mr-2 h-4 w-4" />
-              บันทึกรายการรับเข้า
+              {isEditMode ? "บันทึกการแก้ไข" : "บันทึกรายการรับเข้า"}
             </Button>
           </div>
         </CardContent>

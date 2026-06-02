@@ -257,8 +257,8 @@ export default function StockInManagement() {
             <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
             <AlertDialogDescription>
               ต้องการลบรายการ {deleteItem ? getProductName(deleteItem.product_id) : ""} ?
-              <span className="block mt-1 text-destructive font-medium">
-                การลบจะหักสต็อกวัสดุอัตโนมัติ
+              <span className="block mt-1 text-muted-foreground text-sm">
+                สต็อกจะคำนวณใหม่อัตโนมัติจากประวัติที่เหลือ
               </span>
             </AlertDialogDescription>
           </AlertDialogHeader>

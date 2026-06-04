@@ -67,8 +67,8 @@ async function getAccessToken(credentials: ServiceAccountCredentials): Promise<s
   return tokenData.access_token;
 }
 
-const ALLOWED_SHEETS = ["products", "categories", "units", "companies", "departments", "stock_in", "stock_out"];
-const ALLOWED_ACTIONS = ["read", "create", "update", "delete"];
+const ALLOWED_SHEETS = ["products", "categories", "units", "companies", "departments", "stock_in", "stock_out", "inventory"];
+const ALLOWED_ACTIONS = ["read", "create", "update", "delete", "sync_inventory"];
 const MAX_CELL_LENGTH = 5000;
 
 function sanitizeCellValue(value: unknown): string {

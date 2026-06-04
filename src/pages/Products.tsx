@@ -29,9 +29,17 @@ export default function Products() {
   const { data: products = [], isLoading } = useSheetData<Product>("products");
   const { data: categories = [] } = useSheetData<Category>("categories");
   const { data: units = [] } = useSheetData<Unit>("units");
+  const { data: stockIns = [] } = useSheetData<{ product_id: string; quantity: string }>("stock_in");
+  const { data: stockOuts = [] } = useSheetData<{ product_id: string; quantity: string; status?: string }>("stock_out");
   const createMutation = useSheetCreate("products");
   const updateMutation = useSheetUpdate("products");
   const deleteMutation = useSheetDelete("products");
+
+  // คำนวณสต็อกแบบ real-time จากประวัติทั้งหมด
+  const stockMap: Record<string, number> = {};
+  stockIns.forEach(s => { stockMap[s.product_id] = (stockMap[s.product_id] || 0) + (parseFloat(s.quantity) || 0); });
+  stockOuts.forEach(s => { stockMap[s.product_id] = (stockMap[s.product_id] || 0) - (parseFloat(s.quantity) || 0); });
+  const getStock = (id: string) => stockMap[id] || 0;
 
   const [imageMode, setImageMode] = useState<"url" | "upload">("url");
   const [isUploading, setIsUploading] = useState(false);

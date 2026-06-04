@@ -242,7 +242,7 @@ export default function Products() {
                   {filteredProducts.length === 0 ? (
                     <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">ไม่มีข้อมูล</TableCell></TableRow>
                   ) : filteredProducts.map((product) => {
-                    const stock = parseInt(product.stock) || 0;
+                    const stock = getStock(product.id);
                     const minStock = parseInt(product.min_stock) || 0;
                     return (
                       <TableRow key={product.id} className="table-row-hover">

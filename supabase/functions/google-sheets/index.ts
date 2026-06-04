@@ -455,6 +455,9 @@ serve(async (req) => {
         }
         result = await deleteRow(accessToken, googleSheetId, sheet, idx);
         break;
+      case "sync_inventory": {
+        result = await syncInventory(accessToken, googleSheetId);
+        break;
       }
     }
 

@@ -1,5 +1,4 @@
 import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import { ClipboardList, Pencil, Trash2, Loader2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,13 +8,16 @@ import {
 } from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
 import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
-import { useSheetData, useSheetDelete } from "@/hooks/useGoogleSheets";
+import { useSheetData, useSheetUpdate, useSheetDelete } from "@/hooks/useGoogleSheets";
 
 interface StockInRecord {
   id: string;
@@ -29,70 +31,114 @@ interface StockInRecord {
 
 interface Product { id: string; name: string; unit_id: string; stock: string; }
 interface Company { id: string; name: string; }
+interface Unit { id: string; name: string; }
 
 export default function StockInManagement() {
-  const navigate = useNavigate();
   const { data: stockIns = [], isLoading } = useSheetData<StockInRecord>("stock_in");
   const { data: products = [] } = useSheetData<Product>("products");
   const { data: companies = [] } = useSheetData<Company>("companies");
+  const { data: units = [] } = useSheetData<Unit>("units");
+
+  const updateStockIn = useSheetUpdate("stock_in");
   const deleteStockIn = useSheetDelete("stock_in");
+  const updateProduct = useSheetUpdate("products");
 
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [deleteInvNo, setDeleteInvNo] = useState<string | null>(null);
+  const [editItem, setEditItem] = useState<StockInRecord | null>(null);
+  const [editQuantity, setEditQuantity] = useState("");
+  const [deleteItem, setDeleteItem] = useState<StockInRecord | null>(null);
   const { toast } = useToast();
 
   const getProductName = (id: string) => products.find(p => p.id === id)?.name || id;
   const getCompanyName = (id: string) => companies.find(c => c.id === id)?.name || id;
+  const getProduct = (id: string) => products.find(p => p.id === id);
+  const getUnitName = (unitId: string) => units.find(u => u.id === unitId)?.name || unitId;
 
+  const filteredRecords = useMemo(() => {
+    const q = search.toLowerCase();
+    return stockIns.filter(r => {
+      if (search && !(
+        r.invoice_no?.toLowerCase().includes(q) ||
+        getProductName(r.product_id).toLowerCase().includes(q) ||
+        getCompanyName(r.company_id).toLowerCase().includes(q)
+      )) return false;
+      if (dateFrom && r.date < dateFrom) return false;
+      if (dateTo && r.date > dateTo) return false;
+      return true;
+    }).sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
+  }, [stockIns, search, dateFrom, dateTo, products, companies]);
+
+  // Group by invoice_no
   const grouped = useMemo(() => {
     const map = new Map<string, StockInRecord[]>();
-    stockIns.forEach(r => {
+    filteredRecords.forEach(r => {
       const key = r.invoice_no || r.id;
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(r);
     });
-    let entries = Array.from(map.entries()).sort((a, b) => {
+    return Array.from(map.entries()).sort((a, b) => {
       const dateA = a[1][0]?.created_at || "";
       const dateB = b[1][0]?.created_at || "";
       return dateB.localeCompare(dateA);
     });
-    if (search) {
-      const q = search.toLowerCase();
-      entries = entries.filter(([invNo, records]) =>
-        invNo.toLowerCase().includes(q) ||
-        getCompanyName(records[0].company_id).toLowerCase().includes(q) ||
-        records.some(r => getProductName(r.product_id).toLowerCase().includes(q))
-      );
-    }
-    if (dateFrom || dateTo) {
-      entries = entries.filter(([, records]) => {
-        const d = records[0]?.date || "";
-        if (dateFrom && d < dateFrom) return false;
-        if (dateTo && d > dateTo) return false;
-        return true;
-      });
-    }
-    return entries;
-  }, [stockIns, search, dateFrom, dateTo, products, companies]);
+  }, [filteredRecords]);
 
-  const formatDate = (dateStr: string) => {
-    try { return format(new Date(dateStr), "d MMM yyyy", { locale: th }); }
-    catch { return dateStr; }
-  };
-
-  const handleDeleteInvoice = async () => {
-    if (!deleteInvNo) return;
-    const records = stockIns.filter(r => r.invoice_no === deleteInvNo);
+  const handleEdit = async () => {
+    if (!editItem || !editQuantity) return;
     try {
-      for (const record of records) {
-        await deleteStockIn.mutateAsync(record.id);
+      // Adjust product stock: remove old qty, add new qty
+      const product = getProduct(editItem.product_id);
+      if (product) {
+        const currentStock = parseInt(product.stock) || 0;
+        const oldQty = parseInt(editItem.quantity) || 0;
+        const newQty = parseInt(editQuantity) || 0;
+        const adjustedStock = currentStock - oldQty + newQty;
+        await updateProduct.mutateAsync({
+          id: product.id,
+          data: { ...product, stock: Math.max(0, adjustedStock).toString() },
+        });
       }
-      toast({ title: "ลบใบส่งของสำเร็จ" });
-      setDeleteInvNo(null);
+
+      await updateStockIn.mutateAsync({
+        id: editItem.id,
+        data: { ...editItem, quantity: editQuantity },
+      });
+      toast({ title: "แก้ไขรายการสำเร็จ" });
+      setEditItem(null);
     } catch (e: any) {
       toast({ variant: "destructive", title: "เกิดข้อผิดพลาด", description: e.message });
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteItem) return;
+    try {
+      // Deduct stock for deleted record
+      const product = getProduct(deleteItem.product_id);
+      if (product) {
+        const currentStock = parseInt(product.stock) || 0;
+        const qty = parseInt(deleteItem.quantity) || 0;
+        await updateProduct.mutateAsync({
+          id: product.id,
+          data: { ...product, stock: Math.max(0, currentStock - qty).toString() },
+        });
+      }
+
+      await deleteStockIn.mutateAsync(deleteItem.id);
+      toast({ title: "ลบรายการสำเร็จ" });
+      setDeleteItem(null);
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "เกิดข้อผิดพลาด", description: e.message });
+    }
+  };
+
+  const formatDate = (dateStr: string) => {
+    try {
+      return format(new Date(dateStr), "d MMM yyyy", { locale: th });
+    } catch {
+      return dateStr;
     }
   };
 
@@ -142,72 +188,108 @@ export default function StockInManagement() {
           {grouped.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">ไม่มีรายการรับเข้า</div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>เลขที่ใบส่งของ</TableHead>
-                  <TableHead>วันที่</TableHead>
-                  <TableHead>บริษัท</TableHead>
-                  <TableHead className="text-center">จำนวนรายการ</TableHead>
-                  <TableHead className="text-center">จัดการ</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {grouped.map(([invNo, records]) => {
-                  const first = records[0];
-                  return (
-                    <TableRow key={invNo}>
-                      <TableCell className="font-medium">{invNo}</TableCell>
-                      <TableCell>{formatDate(first.date)}</TableCell>
-                      <TableCell>{getCompanyName(first.company_id)}</TableCell>
-                      <TableCell className="text-center">{records.length}</TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => navigate(`/stock-in?edit=${encodeURIComponent(invNo)}`)}
-                            title="แก้ไข"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive"
-                            onClick={() => setDeleteInvNo(invNo)}
-                            title="ลบใบส่งของ"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+            <div className="space-y-4">
+              {grouped.map(([invNo, records]) => {
+                const first = records[0];
+                return (
+                  <Card key={invNo} className="border">
+                    <CardHeader className="py-3 px-4">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-base">ใบส่งของ: {invNo}</CardTitle>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <span>{formatDate(first.date)}</span>
+                          <span>•</span>
+                          <span>{getCompanyName(first.company_id)}</span>
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="px-4 pb-3">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>วัสดุ</TableHead>
+                            <TableHead>หน่วย</TableHead>
+                            <TableHead className="text-right">จำนวน</TableHead>
+                            <TableHead className="text-center">จัดการ</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {records.map(record => {
+                            const product = getProduct(record.product_id);
+                            return (
+                              <TableRow key={record.id}>
+                                <TableCell>{getProductName(record.product_id)}</TableCell>
+                                <TableCell>{product ? getUnitName(product.unit_id) : "-"}</TableCell>
+                                <TableCell className="text-right">{parseInt(record.quantity).toLocaleString()}</TableCell>
+                                <TableCell className="text-center">
+                                  <div className="flex items-center justify-center gap-1">
+                                    <Button variant="ghost" size="icon" className="h-7 w-7"
+                                      onClick={() => { setEditItem(record); setEditQuantity(record.quantity); }}
+                                      title="แก้ไข">
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
+                                      onClick={() => setDeleteItem(record)} title="ลบ">
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
           )}
         </CardContent>
       </Card>
 
-      <AlertDialog open={!!deleteInvNo} onOpenChange={() => setDeleteInvNo(null)}>
+      {/* Edit dialog */}
+      <Dialog open={!!editItem} onOpenChange={() => setEditItem(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>แก้ไขรายการรับเข้า</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>วัสดุ</Label>
+              <Input value={editItem ? getProductName(editItem.product_id) : ""} disabled />
+            </div>
+            <div>
+              <Label>จำนวน</Label>
+              <Input type="number" value={editQuantity} onChange={(e) => setEditQuantity(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditItem(null)}>ยกเลิก</Button>
+            <Button onClick={handleEdit} disabled={updateStockIn.isPending}>
+              {updateStockIn.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              บันทึก
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteItem} onOpenChange={() => setDeleteItem(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>ยืนยันการลบใบส่งของ</AlertDialogTitle>
+            <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
             <AlertDialogDescription>
-              ต้องการลบใบส่งของ {deleteInvNo} ทั้งใบหรือไม่?
-              <br />
-              <span className="text-muted-foreground text-sm">
-                สต็อกจะคำนวณใหม่อัตโนมัติจากประวัติที่เหลือ
+              ต้องการลบรายการ {deleteItem ? getProductName(deleteItem.product_id) : ""} ?
+              <span className="block mt-1 text-destructive font-medium">
+                การลบจะหักสต็อกวัสดุอัตโนมัติ
               </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteInvoice} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              ลบใบส่งของ
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              ลบ
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

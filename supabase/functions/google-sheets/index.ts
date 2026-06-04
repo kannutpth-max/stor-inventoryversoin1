@@ -67,8 +67,8 @@ async function getAccessToken(credentials: ServiceAccountCredentials): Promise<s
   return tokenData.access_token;
 }
 
-const ALLOWED_SHEETS = ["products", "categories", "units", "companies", "departments", "stock_in", "stock_out"];
-const ALLOWED_ACTIONS = ["read", "create", "update", "delete"];
+const ALLOWED_SHEETS = ["products", "categories", "units", "companies", "departments", "stock_in", "stock_out", "inventory"];
+const ALLOWED_ACTIONS = ["read", "create", "update", "delete", "sync_inventory"];
 const MAX_CELL_LENGTH = 5000;
 
 function sanitizeCellValue(value: unknown): string {
@@ -236,6 +236,108 @@ async function deleteRow(accessToken: string, sheetId: string, sheetName: string
   return await res.json();
 }
 
+async function ensureSheetExists(accessToken: string, sheetId: string, sheetName: string) {
+  const metaRes = await fetch(`${SHEETS_API}/${sheetId}?fields=sheets.properties`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  const metaData = await metaRes.json();
+  const exists = metaData.sheets?.some((s: any) => s.properties.title === sheetName);
+  if (exists) return;
+  const res = await fetch(`${SHEETS_API}/${sheetId}:batchUpdate`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      requests: [{ addSheet: { properties: { title: sheetName } } }],
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    console.error(`Failed to create sheet ${sheetName}:`, err);
+    throw new Error("Failed to create sheet");
+  }
+}
+
+async function clearSheet(accessToken: string, sheetId: string, sheetName: string) {
+  const res = await fetch(
+    `${SHEETS_API}/${sheetId}/values/${encodeURIComponent(sheetName)}:clear`,
+    { method: "POST", headers: { Authorization: `Bearer ${accessToken}` } },
+  );
+  if (!res.ok) {
+    const err = await res.text();
+    console.error(`Failed to clear sheet ${sheetName}:`, err);
+    throw new Error("Failed to clear sheet");
+  }
+}
+
+async function writeRows(accessToken: string, sheetId: string, sheetName: string, rows: string[][]) {
+  const res = await fetch(
+    `${SHEETS_API}/${sheetId}/values/${encodeURIComponent(sheetName)}!A1?valueInputOption=USER_ENTERED`,
+    {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ values: rows }),
+    },
+  );
+  if (!res.ok) {
+    const err = await res.text();
+    console.error(`Failed to write rows to ${sheetName}:`, err);
+    throw new Error("Failed to write rows");
+  }
+  return await res.json();
+}
+
+async function syncInventory(accessToken: string, sheetId: string) {
+  await ensureSheetExists(accessToken, sheetId, "inventory");
+  const [products, stockIn, stockOut, categories, units] = await Promise.all([
+    getSheetData(accessToken, sheetId, "products"),
+    getSheetData(accessToken, sheetId, "stock_in"),
+    getSheetData(accessToken, sheetId, "stock_out"),
+    getSheetData(accessToken, sheetId, "categories").catch(() => []),
+    getSheetData(accessToken, sheetId, "units").catch(() => []),
+  ]);
+
+  const stockMap: Record<string, number> = {};
+  for (const r of stockIn as any[]) {
+    const pid = r.product_id;
+    const qty = parseFloat(r.quantity || "0");
+    if (pid && !isNaN(qty)) stockMap[pid] = (stockMap[pid] || 0) + qty;
+  }
+  for (const r of stockOut as any[]) {
+    const pid = r.product_id;
+    const qty = parseFloat(r.quantity || "0");
+    if (pid && !isNaN(qty)) stockMap[pid] = (stockMap[pid] || 0) - qty;
+  }
+
+  const catMap: Record<string, string> = {};
+  for (const c of categories as any[]) catMap[c.id] = c.name || "";
+  const unitMap: Record<string, string> = {};
+  for (const u of units as any[]) unitMap[u.id] = u.name || "";
+
+  const now = new Date().toISOString();
+  const headers = ["id", "product_id", "code", "name", "category", "unit", "stock", "min_stock", "updated_at"];
+  const rows: string[][] = [headers];
+  for (const p of products as any[]) {
+    const stock = stockMap[p.id] ?? 0;
+    rows.push([
+      p.id || "",
+      p.id || "",
+      sanitizeCellValue(p.code),
+      sanitizeCellValue(p.name),
+      sanitizeCellValue(catMap[p.category_id] || p.category || ""),
+      sanitizeCellValue(unitMap[p.unit_id] || p.unit || ""),
+      String(stock),
+      sanitizeCellValue(p.min_stock || "0"),
+      now,
+    ]);
+  }
+
+  await clearSheet(accessToken, sheetId, "inventory");
+  await writeRows(accessToken, sheetId, "inventory", rows);
+  return { count: rows.length - 1, updated_at: now };
+}
+
+
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -352,6 +454,10 @@ serve(async (req) => {
           });
         }
         result = await deleteRow(accessToken, googleSheetId, sheet, idx);
+        break;
+      }
+      case "sync_inventory": {
+        result = await syncInventory(accessToken, googleSheetId);
         break;
       }
     }

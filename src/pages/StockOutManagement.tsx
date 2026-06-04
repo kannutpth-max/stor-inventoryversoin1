@@ -81,17 +81,6 @@ export default function StockOutManagement() {
     const records = stockOuts.filter(r => r.requisition_no === deleteReqNo);
     try {
       for (const record of records) {
-        if (record.status === "dispensed") {
-          const product = getProduct(record.product_id);
-          if (product) {
-            const currentStock = parseInt(product.stock) || 0;
-            const qty = parseInt(record.quantity) || 0;
-            await updateProduct.mutateAsync({
-              id: product.id,
-              data: { ...product, stock: (currentStock + qty).toString() },
-            });
-          }
-        }
         await deleteStockOut.mutateAsync(record.id);
       }
       toast({ title: "ลบใบเบิกสำเร็จ" });

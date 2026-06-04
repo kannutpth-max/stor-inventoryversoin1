@@ -202,8 +202,8 @@ export default function StockOutManagement() {
             <AlertDialogDescription>
               ต้องการลบใบเบิก {deleteReqNo} ทั้งใบหรือไม่?
               <br />
-              <span className="text-destructive font-medium">
-                รายการที่จ่ายแล้วจะคืนสต็อกอัตโนมัติ
+              <span className="text-muted-foreground">
+                สต็อกจะคำนวณใหม่อัตโนมัติ (วัสดุที่จ่ายไปจะคืนกลับเข้าสต็อก)
               </span>
             </AlertDialogDescription>
           </AlertDialogHeader>

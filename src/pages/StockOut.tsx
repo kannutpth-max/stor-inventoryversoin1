@@ -162,18 +162,7 @@ export default function StockOut() {
     }
     try {
       for (const item of toDispense) {
-        const product = products.find(p => p.id === item.productId);
-        if (!product) continue;
-        const currentStock = parseInt(product.stock) || 0;
         const dispenseQty = item.dispenseQty || item.quantity;
-        if (dispenseQty > currentStock) {
-          toast({ variant: "destructive", title: `${item.productName} คงเหลือไม่เพียงพอ (คงเหลือ ${currentStock})` });
-          return;
-        }
-        await updateProduct.mutateAsync({
-          id: product.id,
-          data: { ...product, stock: (currentStock - dispenseQty).toString() },
-        });
         if (item.recordId) {
           const record = stockOuts.find(r => r.id === item.recordId);
           if (record) {

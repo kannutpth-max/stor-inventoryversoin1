@@ -75,6 +75,7 @@ export default function StockOut() {
         setItems(records.map(r => {
           const product = products.find(p => p.id === r.product_id);
           const qty = parseInt(r.quantity) || 0;
+          const isDispensed = r.status === "dispensed";
           return {
             id: `item-${r.id}`,
             recordId: r.id,
@@ -82,7 +83,8 @@ export default function StockOut() {
             productName: product?.name || r.product_id,
             unit: product ? getUnitName(product.unit_id) : "-",
             quantity: qty,
-            dispenseQty: r.status === "dispensed" ? qty : qty,
+            dispenseQty: qty,
+            originalDispenseQty: isDispensed ? qty : 0,
             stock: parseInt(product?.stock || "0"),
             status: r.status,
           };

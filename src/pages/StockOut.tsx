@@ -31,6 +31,7 @@ interface StockOutRecord {
 interface StockOutItem {
   id: string; recordId?: string; productId: string; productName: string; unit: string;
   quantity: number; dispenseQty: number; stock: number; status?: string;
+  originalDispenseQty?: number;
 }
 
 export default function StockOut() {

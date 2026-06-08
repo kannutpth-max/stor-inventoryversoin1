@@ -31,6 +31,7 @@ interface StockOutRecord {
 interface StockOutItem {
   id: string; recordId?: string; productId: string; productName: string; unit: string;
   quantity: number; dispenseQty: number; stock: number; status?: string;
+  originalDispenseQty?: number;
 }
 
 export default function StockOut() {
@@ -74,6 +75,7 @@ export default function StockOut() {
         setItems(records.map(r => {
           const product = products.find(p => p.id === r.product_id);
           const qty = parseInt(r.quantity) || 0;
+          const isDispensed = r.status === "dispensed";
           return {
             id: `item-${r.id}`,
             recordId: r.id,
@@ -81,7 +83,8 @@ export default function StockOut() {
             productName: product?.name || r.product_id,
             unit: product ? getUnitName(product.unit_id) : "-",
             quantity: qty,
-            dispenseQty: r.status === "dispensed" ? qty : qty,
+            dispenseQty: qty,
+            originalDispenseQty: isDispensed ? qty : 0,
             stock: parseInt(product?.stock || "0"),
             status: r.status,
           };
@@ -155,37 +158,68 @@ export default function StockOut() {
   };
 
   const handleDispense = async () => {
-    const toDispense = items.filter(i => i.status !== "dispensed");
-    if (toDispense.length === 0) {
-      toast({ title: "จ่ายของครบทุกรายการแล้ว" });
+    // Compute per-item delta to deduct (positive = deduct, negative = return)
+    const changes = items.map(item => {
+      const newQty = item.dispenseQty || 0;
+      const prevQty = item.originalDispenseQty || 0;
+      const delta = newQty - prevQty; // only the change
+      return { item, newQty, prevQty, delta };
+    });
+
+    const hasWork = changes.some(c => c.delta !== 0 || (c.item.status !== "dispensed" && c.newQty > 0));
+    if (!hasWork) {
+      toast({ title: "ไม่มีรายการที่ต้องตัดสต็อกเพิ่ม" });
       return;
     }
+
+    // Aggregate net stock change per product, then validate
+    const netByProduct = new Map<string, number>();
+    for (const c of changes) {
+      if (c.delta === 0) continue;
+      netByProduct.set(c.item.productId, (netByProduct.get(c.item.productId) || 0) + c.delta);
+    }
+    for (const [pid, net] of netByProduct.entries()) {
+      const product = products.find(p => p.id === pid);
+      const currentStock = parseInt(product?.stock || "0") || 0;
+      if (net > 0 && net > currentStock) {
+        toast({ variant: "destructive", title: `${product?.name || pid} คงเหลือไม่เพียงพอ (คงเหลือ ${currentStock})` });
+        return;
+      }
+    }
+
     try {
-      for (const item of toDispense) {
-        const product = products.find(p => p.id === item.productId);
+      // Apply stock changes once per product (deduct delta only)
+      for (const [pid, net] of netByProduct.entries()) {
+        if (net === 0) continue;
+        const product = products.find(p => p.id === pid);
         if (!product) continue;
         const currentStock = parseInt(product.stock) || 0;
-        const dispenseQty = item.dispenseQty || item.quantity;
-        if (dispenseQty > currentStock) {
-          toast({ variant: "destructive", title: `${item.productName} คงเหลือไม่เพียงพอ (คงเหลือ ${currentStock})` });
-          return;
-        }
         await updateProduct.mutateAsync({
           id: product.id,
-          data: { ...product, stock: (currentStock - dispenseQty).toString() },
+          data: { ...product, stock: (currentStock - net).toString() },
         });
-        if (item.recordId) {
-          const record = stockOuts.find(r => r.id === item.recordId);
-          if (record) {
-            await updateStockOut.mutateAsync({
-              id: item.recordId,
-              data: { ...record, status: "dispensed", quantity: dispenseQty.toString() },
-            });
-          }
-        }
       }
-      toast({ title: "จ่ายวัสดุและตัดสต็อกสำเร็จ" });
-      setItems(items.map(i => ({ ...i, status: "dispensed" })));
+
+      // Persist record status / quantity changes
+      for (const c of changes) {
+        const { item, newQty, delta } = c;
+        if (!item.recordId) continue;
+        const record = stockOuts.find(r => r.id === item.recordId);
+        if (!record) continue;
+        // Only write back if something changed
+        if (delta === 0 && record.status === "dispensed") continue;
+        await updateStockOut.mutateAsync({
+          id: item.recordId,
+          data: { ...record, status: "dispensed", quantity: newQty.toString() },
+        });
+      }
+
+      toast({ title: "ตัดสต็อกเฉพาะรายการที่แก้ไขแล้ว" });
+      setItems(items.map(i => ({
+        ...i,
+        status: "dispensed",
+        originalDispenseQty: i.dispenseQty || 0,
+      })));
     } catch (e: any) {
       toast({ variant: "destructive", title: "เกิดข้อผิดพลาด", description: e.message });
     }

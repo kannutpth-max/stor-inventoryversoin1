@@ -15,6 +15,7 @@ import {
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
+import { parseSheetDate } from "@/lib/utils";
 import { useSheetData, useSheetUpdate, useSheetDelete } from "@/hooks/useGoogleSheets";
 
 interface StockInRecord {

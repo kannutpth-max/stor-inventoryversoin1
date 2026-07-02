@@ -82,7 +82,7 @@ export default function StockIn() {
     setEditMode(true);
     setInvoiceNo(first.invoice_no);
     setCompanyId(first.company_id);
-    try { setDate(new Date(first.date)); } catch {}
+    try { setDate(parseSheetDate(first.date)); } catch {}
     const loaded: StockInItem[] = editState.records.map((r, idx) => {
       const product = products.find(p => p.id === r.product_id);
       const qty = parseInt(r.quantity) || 0;

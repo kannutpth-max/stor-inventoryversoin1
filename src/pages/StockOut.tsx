@@ -69,7 +69,7 @@ export default function StockOut() {
       const records = stockOuts.filter(r => r.requisition_no === editReqNo);
       if (records.length > 0) {
         const first = records[0];
-        setDate(new Date(first.date));
+        setDate(parseSheetDate(first.date));
         setWithdrawNo(first.requisition_no);
         setDepartmentId(first.department_id);
         setItems(records.map(r => {

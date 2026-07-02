@@ -16,7 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
-import { cn } from "@/lib/utils";
+import { cn, parseSheetDate } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useSheetData, useSheetCreate, useSheetUpdate, useSheetDelete } from "@/hooks/useGoogleSheets";
 
@@ -82,7 +82,7 @@ export default function StockIn() {
     setEditMode(true);
     setInvoiceNo(first.invoice_no);
     setCompanyId(first.company_id);
-    try { setDate(new Date(first.date)); } catch {}
+    try { setDate(parseSheetDate(first.date)); } catch {}
     const loaded: StockInItem[] = editState.records.map((r, idx) => {
       const product = products.find(p => p.id === r.product_id);
       const qty = parseInt(r.quantity) || 0;

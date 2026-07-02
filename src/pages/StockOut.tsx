@@ -16,7 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
-import { cn } from "@/lib/utils";
+import { cn, parseSheetDate } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useSheetData, useSheetCreate, useSheetUpdate } from "@/hooks/useGoogleSheets";
 
@@ -69,7 +69,7 @@ export default function StockOut() {
       const records = stockOuts.filter(r => r.requisition_no === editReqNo);
       if (records.length > 0) {
         const first = records[0];
-        setDate(new Date(first.date));
+        setDate(parseSheetDate(first.date));
         setWithdrawNo(first.requisition_no);
         setDepartmentId(first.department_id);
         setItems(records.map(r => {

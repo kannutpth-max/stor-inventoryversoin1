@@ -22,3 +22,13 @@ export function parseSheetDate(v: string | number | Date | null | undefined): Da
   return new Date(s);
 }
 
+export function formatThaiBuddhistDate(
+  v: string | number | Date | null | undefined,
+  options: Intl.DateTimeFormatOptions = { day: "numeric", month: "long", year: "numeric" }
+): string {
+  const date = parseSheetDate(v);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return new Intl.DateTimeFormat("th-TH-u-ca-buddhist-nu-latn", options).format(date);
+}
+

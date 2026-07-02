@@ -12,10 +12,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
-import { th } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
-import { parseSheetDate } from "@/lib/utils";
+import { formatThaiBuddhistDate } from "@/lib/utils";
 import { useSheetData, useSheetDelete, useSheetUpdate } from "@/hooks/useGoogleSheets";
 
 interface StockOutRecord {
@@ -73,7 +71,7 @@ export default function StockOutManagement() {
   }, [stockOuts, search, dateFrom, dateTo, departments]);
 
   const formatDate = (dateStr: string) => {
-    try { return format(parseSheetDate(dateStr), "d MMM yyyy", { locale: th }); }
+    try { return formatThaiBuddhistDate(dateStr, { day: "numeric", month: "short", year: "numeric" }); }
     catch { return dateStr; }
   };
 

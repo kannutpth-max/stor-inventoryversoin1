@@ -15,8 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
-import { th } from "date-fns/locale";
-import { cn, parseSheetDate } from "@/lib/utils";
+import { cn, formatThaiBuddhistDate, parseSheetDate } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useSheetData, useSheetCreate, useSheetUpdate, useSheetDelete } from "@/hooks/useGoogleSheets";
 
@@ -274,7 +273,7 @@ export default function StockIn() {
                 <PopoverTrigger asChild>
                   <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}>
                     <Calendar className="mr-2 h-4 w-4" />
-                    {date ? format(date, "PPP", { locale: th }) : "เลือกวันที่"}
+                    {date ? formatThaiBuddhistDate(date) : "เลือกวันที่"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">

@@ -117,7 +117,7 @@ export default function StockInManagement() {
   };
 
   const formatDate = (dateStr: string) => {
-    try { return format(new Date(dateStr), "d MMM yyyy", { locale: th }); }
+    try { return format(parseSheetDate(dateStr), "d MMM yyyy", { locale: th }); }
     catch { return dateStr; }
   };
 

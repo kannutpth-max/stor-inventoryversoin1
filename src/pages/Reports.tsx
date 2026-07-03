@@ -120,10 +120,11 @@ export default function Reports() {
         };
         saved = type === "excel" ? await exportStockCardToExcel(stockCardParams) : await exportStockCardToPDF(stockCardParams);
       } else if (selectedReport === "stock-balance") {
+        const allowedIds = new Set(filtered.products.map((p: any) => p.id));
         const params = {
           products: filtered.products,
-          stockIn: filtered.stockIn,
-          stockOut: filtered.stockOut,
+          stockIn: (stockIn as any[]).filter(r => allowedIds.has(r.product_id)),
+          stockOut: (stockOut as any[]).filter(r => allowedIds.has(r.product_id)),
           helpers: { getProductUnit },
           dateFrom,
           dateTo,

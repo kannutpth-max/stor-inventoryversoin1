@@ -1,31 +1,18 @@
-## ปัญหา
-Google Sheets คืนค่าคอลัมน์วันที่เป็น serial number (เช่น `"45631"`) แทน string `yyyy-MM-dd` ทำให้ `new Date("45631")` ตีความเป็น ค.ศ. 45631 แล้วบวก 543 = พ.ศ. 46174
+## เพิ่มตัวเลือกเดือนในหน้าแดชบอร์ด
 
-## วิธีแก้ (ไม่กระทบโครงสร้าง/ฟังก์ชันเดิม)
+เพิ่มช่องเลือก "เดือน" และ "ปี (พ.ศ.)" ที่ด้านบนของหน้า Dashboard เพื่อกรองข้อมูลตามเดือนที่เลือก โดยค่าเริ่มต้นเป็นเดือน/ปีปัจจุบัน
 
-**1. เพิ่ม helper `parseSheetDate` ใน `src/lib/utils.ts`**
-```ts
-export function parseSheetDate(v: string | number | Date): Date {
-  if (v instanceof Date) return v;
-  const s = String(v).trim();
-  // Excel/Sheets serial number (days since 1899-12-30)
-  if (/^\d+(\.\d+)?$/.test(s)) {
-    const serial = Number(s);
-    return new Date(Math.round((serial - 25569) * 86400 * 1000));
-  }
-  return new Date(s);
-}
-```
+### สิ่งที่จะปรับใน `src/pages/Dashboard.tsx`
 
-**2. ใช้ helper แทน `new Date(...)` เฉพาะจุดที่อ่านวันที่จากชีต:**
-- `src/pages/StockIn.tsx` บรรทัด 85: `setDate(parseSheetDate(first.date))`
-- `src/pages/StockInManagement.tsx` `formatDate` (บรรทัด 118-120)
-- `src/pages/StockOut.tsx` — จุดโหลด edit mode ที่ setDate จาก record
-- `src/pages/StockOutManagement.tsx` — `formatDate` เช่นเดียวกัน
+1. เพิ่ม state `selectedMonth` และ `selectedYear` (ค่าเริ่มต้น = เดือน/ปีปัจจุบัน)
+2. เพิ่ม UI ด้านบน: `Select` 2 ช่อง (เดือนภาษาไทว 12 เดือน / ปี พ.ศ. ย้อนหลัง 5 ปี ถึงปีปัจจุบัน) พร้อมปุ่ม "เดือนนี้" สำหรับรีเซ็ต
+3. แก้ `useMemo` ให้ใช้ `selectedMonth`/`selectedYear` แทน `currentMonth`/`currentYear` ที่ hard-code เป็นเดือนปัจจุบัน
+   - การ์ดสถิติ "รับเข้า/เบิกออก" → แสดงยอดของเดือนที่เลือก
+   - "ความเคลื่อนไหวล่าสุด" → แสดงเฉพาะรายการในเดือนที่เลือก (5 รายการล่าสุด)
+   - "สรุปภาพรวมประจำเดือน" → ใช้ label เดือน/ปีที่เลือก
+4. ส่วน "วัสดุทั้งหมด" และ "วัสดุต่ำกว่าเกณฑ์" ยังคงคำนวณจากสต็อกรวมทั้งหมด (ไม่ผูกกับเดือน) เพราะเป็นสถานะปัจจุบัน
 
-**3. ไม่แตะ logic บันทึก** (`format(date, "yyyy-MM-dd")` ยังคงเดิม) และไม่แตะ edge function
-
-## ผลลัพธ์
-- วันที่ในหน้าแก้ไข และหน้าจัดการรายการ แสดง พ.ศ. ตรงกับความเป็นจริง
-- รายการเดิมที่ถูกบันทึกเป็น serial number จะถูกแปลงถูกต้อง
-- โครงสร้าง UI, การบันทึก, ตัด/คืนสต็อก คงเดิม 100%
+### คงสภาพเดิม 100%
+- ไม่แตะโครงสร้าง layout, การ์ด, สีธีม
+- ไม่แก้ไข business logic การคำนวณสต็อก
+- ไม่แก้ไฟล์อื่นนอกจาก `Dashboard.tsx`

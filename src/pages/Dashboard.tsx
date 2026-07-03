@@ -65,11 +65,14 @@ export default function Dashboard() {
       percentage: Math.max(0, Math.min(100, Math.round(((stockMap[p.id] || 0) / (parseInt(p.min_stock) || 1)) * 100))),
     }));
 
-    // Recent movements (last 10)
+    // Recent movements in selected month (top 5)
     const allMovements = [
       ...stockIn.map(s => ({ ...s, type: "in" as const })),
       ...stockOut.map(s => ({ ...s, type: "out" as const })),
-    ].sort((a, b) => {
+    ].filter(m => {
+      const d = parseDate(m.date);
+      return d && d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
+    }).sort((a, b) => {
       const da = parseDate(a.date)?.getTime() || 0;
       const db = parseDate(b.date)?.getTime() || 0;
       return db - da;
@@ -89,11 +92,12 @@ export default function Dashboard() {
     }));
 
     return { totalProducts: products.length, totalIn, totalOut, lowStockCount: lowStock.length, lowStock, recentMovements, netChange: totalIn - totalOut };
-  }, [products, stockIn, stockOut, companies, departments]);
+  }, [products, stockIn, stockOut, companies, departments, selectedMonth, selectedYear]);
 
   const thaiMonth = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
-  const now = new Date();
-  const monthLabel = `${thaiMonth[now.getMonth()]} ${now.getFullYear() + 543}`;
+  const monthLabel = `${thaiMonth[selectedMonth]} ${selectedYear + 543}`;
+  const yearOptions = Array.from({ length: 6 }, (_, i) => nowDate.getFullYear() - i);
+  const isCurrentMonth = selectedMonth === nowDate.getMonth() && selectedYear === nowDate.getFullYear();
 
   if (isLoading) {
     return (

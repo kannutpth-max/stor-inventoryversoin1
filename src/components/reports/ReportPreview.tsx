@@ -242,7 +242,7 @@ function StockBalanceReport({ products, stockIn, stockOut, getProductUnit, dateF
   products: Product[]; stockIn: StockInRecord[]; stockOut: StockOutRecord[];
   getProductUnit: (id: string) => string; dateFrom?: Date; dateTo?: Date;
 }) {
-  const rows = computeStockBalanceRows(products, stockIn, stockOut, getProductUnit);
+  const rows = computeStockBalanceRows(products, stockIn, stockOut, getProductUnit, dateFrom, dateTo);
   const refDate = dateTo || dateFrom || new Date();
   const monthLabel = format(refDate, "MMMM", { locale: th });
   const yearBE = refDate.getFullYear() + 543;

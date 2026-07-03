@@ -314,20 +314,40 @@ export interface StockBalanceExportParams {
 
 function buildStockBalanceData(params: StockBalanceExportParams) {
   const { products, stockIn, stockOut, helpers, dateFrom, dateTo } = params;
+  const now = new Date();
+  const periodStart = dateFrom ? new Date(dateFrom.getFullYear(), dateFrom.getMonth(), dateFrom.getDate(), 0, 0, 0, 0)
+    : new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+  const periodEnd = dateTo ? new Date(dateTo.getFullYear(), dateTo.getMonth(), dateTo.getDate(), 23, 59, 59, 999)
+    : new Date(periodStart.getFullYear(), periodStart.getMonth() + 1, 0, 23, 59, 59, 999);
+  const parseDate = (v: any): Date => {
+    if (v instanceof Date) return v;
+    if (v === null || v === undefined || v === "") return new Date(NaN);
+    const s = String(v).trim();
+    if (/^\d+(\.\d+)?$/.test(s)) return new Date(Math.round((Number(s) - 25569) * 86400 * 1000));
+    return new Date(s);
+  };
   const rows = products.map((p, idx) => {
     const price = parseFloat(p.price) || 0;
     const pIn = stockIn.filter(r => r.product_id === p.id);
     const pOut = stockOut.filter(r => r.product_id === p.id);
-    const inQty = pIn.reduce((s, r) => s + (parseInt(r.quantity) || 0), 0);
-    const outQty = pOut.reduce((s, r) => s + (parseInt(r.quantity) || 0), 0);
+    const sumQty = (arr: any[], pred: (d: Date) => boolean) =>
+      arr.reduce((s, r) => {
+        const d = parseDate(r.date);
+        if (Number.isNaN(d.getTime())) return s;
+        return pred(d) ? s + (parseInt(r.quantity) || 0) : s;
+      }, 0);
+    const inFromStart = sumQty(pIn, d => d >= periodStart);
+    const outFromStart = sumQty(pOut, d => d >= periodStart);
+    const inPeriod = sumQty(pIn, d => d >= periodStart && d <= periodEnd);
+    const outPeriod = sumQty(pOut, d => d >= periodStart && d <= periodEnd);
     const currentStock = parseInt(p.stock) || 0;
-    const opening = currentStock - inQty + outQty;
-    const closing = opening + inQty - outQty;
+    const opening = currentStock - inFromStart + outFromStart;
+    const closing = opening + inPeriod - outPeriod;
     return {
       seq: idx + 1, id: p.id, name: p.name, unit: helpers.getProductUnit(p.id),
       opening, price, openingValue: opening * price,
-      inQty, inValue: inQty * price,
-      outQty, outValue: outQty * price,
+      inQty: inPeriod, inValue: inPeriod * price,
+      outQty: outPeriod, outValue: outPeriod * price,
       closing, closingValue: closing * price,
     };
   });
@@ -344,7 +364,7 @@ function buildStockBalanceData(params: StockBalanceExportParams) {
   const monthLabel = thMonths[refDate.getMonth()];
   const yearBE = refDate.getFullYear() + 543;
   const fmtThaiDate = (d?: Date) => d ? `${d.getDate()} ${thMonthsShort[d.getMonth()]} ${d.getFullYear() + 543}` : "-";
-  return { rows, totals, monthLabel, yearBE, openDate: fmtThaiDate(dateFrom), closeDate: fmtThaiDate(dateTo) };
+  return { rows, totals, monthLabel, yearBE, openDate: fmtThaiDate(dateFrom || periodStart), closeDate: fmtThaiDate(dateTo || periodEnd) };
 }
 
 export async function exportStockBalanceToExcel(params: StockBalanceExportParams): Promise<boolean> {

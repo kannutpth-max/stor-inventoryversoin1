@@ -22,26 +22,27 @@ export default function Dashboard() {
 
   const isLoading = loadingProducts || loadingIn || loadingOut;
 
-  const stats = useMemo(() => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+  const nowDate = new Date();
+  const [selectedMonth, setSelectedMonth] = useState<number>(nowDate.getMonth());
+  const [selectedYear, setSelectedYear] = useState<number>(nowDate.getFullYear());
 
+  const stats = useMemo(() => {
     const parseDate = (d: string) => {
       if (!d) return null;
-      // Try DD/MM/YYYY or YYYY-MM-DD
+      // Support Sheets serial numbers, ISO, and DD/MM/YYYY
       const parts = d.split("/");
       if (parts.length === 3) return new Date(+parts[2], +parts[1] - 1, +parts[0]);
-      return new Date(d);
+      const parsed = parseSheetDate(d);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
     };
 
     const thisMonthIn = stockIn.filter(s => {
       const d = parseDate(s.date);
-      return d && d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      return d && d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
     });
     const thisMonthOut = stockOut.filter(s => {
       const d = parseDate(s.date);
-      return d && d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      return d && d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
     });
 
     const totalIn = thisMonthIn.reduce((sum, s) => sum + (parseInt(s.quantity) || 0), 0);

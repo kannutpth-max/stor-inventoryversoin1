@@ -1,8 +1,11 @@
 import { Package, PackagePlus, PackageMinus, AlertTriangle, TrendingUp, TrendingDown, BarChart3, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { useSheetData } from "@/hooks/useGoogleSheets";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { parseSheetDate } from "@/lib/utils";
 
 interface Product { id: string; name: string; category_id: string; unit_id: string; min_stock: string; [k: string]: string; }
 interface StockIn { id: string; product_id: string; quantity: string; date: string; company_id: string; [k: string]: string; }

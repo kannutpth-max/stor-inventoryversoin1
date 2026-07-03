@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useSheetData } from "@/hooks/useGoogleSheets";
 import { format, parseISO, isSameDay, isSameMonth } from "date-fns";
 import { th } from "date-fns/locale";
+import { parseSheetDate } from "@/lib/utils";
 
 interface Product { id: string; name: string; category_id: string; unit_id: string; price: string; min_stock: string; stock: string; }
 interface Category { id: string; name: string; }
@@ -90,7 +91,7 @@ export default function ReportPreview({ reportType, dateFrom, dateTo, productFro
     case "monthly":
       return <DailyMonthlyReport stockIn={filteredStockIn} stockOut={filteredStockOut} getProductName={getProductName} getProductUnit={getProductUnit} getCompanyName={getCompanyName} getDepartmentName={getDepartmentName} />;
     case "stock-balance":
-      return <StockBalanceReport products={filteredProducts} stockIn={filteredStockIn} stockOut={filteredStockOut} getProductUnit={getProductUnit} dateFrom={dateFrom} dateTo={dateTo} />;
+      return <StockBalanceReport products={filteredProducts} stockIn={stockIn.filter(r => filterByProduct(r.product_id))} stockOut={stockOut.filter(r => filterByProduct(r.product_id))} getProductUnit={getProductUnit} dateFrom={dateFrom} dateTo={dateTo} />;
     case "stock-card":
       return <StockCardReport products={filteredProducts} stockIn={filteredStockIn} stockOut={filteredStockOut} getProductUnit={getProductUnit} getCompanyName={getCompanyName} getDepartmentName={getDepartmentName} getCategoryName={getCategoryName} dateFrom={dateFrom} />;
     case "product-movement":
@@ -189,16 +190,34 @@ export function computeStockBalanceRows(
   stockIn: StockInRecord[],
   stockOut: StockOutRecord[],
   getProductUnit: (id: string) => string,
+  dateFrom?: Date,
+  dateTo?: Date,
 ) {
+  // Determine reporting period. Default to current month when no dateFrom given.
+  const now = new Date();
+  const periodStart = dateFrom ? new Date(dateFrom.getFullYear(), dateFrom.getMonth(), dateFrom.getDate(), 0, 0, 0, 0)
+    : new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+  const periodEnd = dateTo ? new Date(dateTo.getFullYear(), dateTo.getMonth(), dateTo.getDate(), 23, 59, 59, 999)
+    : new Date(periodStart.getFullYear(), periodStart.getMonth() + 1, 0, 23, 59, 59, 999);
+
   return products.map((p, idx) => {
     const price = parseFloat(p.price) || 0;
     const pIn = stockIn.filter(r => r.product_id === p.id);
     const pOut = stockOut.filter(r => r.product_id === p.id);
-    const inQty = pIn.reduce((s, r) => s + (parseInt(r.quantity) || 0), 0);
-    const outQty = pOut.reduce((s, r) => s + (parseInt(r.quantity) || 0), 0);
+    const sumQty = (arr: { date: string; quantity: string }[], pred: (d: Date) => boolean) =>
+      arr.reduce((s, r) => {
+        const d = parseSheetDate(r.date);
+        if (Number.isNaN(d.getTime())) return s;
+        return pred(d) ? s + (parseInt(r.quantity) || 0) : s;
+      }, 0);
+    const inFromStart = sumQty(pIn, d => d >= periodStart);
+    const outFromStart = sumQty(pOut, d => d >= periodStart);
+    const inPeriod = sumQty(pIn, d => d >= periodStart && d <= periodEnd);
+    const outPeriod = sumQty(pOut, d => d >= periodStart && d <= periodEnd);
     const currentStock = parseInt(p.stock) || 0;
-    const opening = currentStock - inQty + outQty;
-    const closing = opening + inQty - outQty;
+    // Opening = stock at start of period = current - all txs from start onwards
+    const opening = currentStock - inFromStart + outFromStart;
+    const closing = opening + inPeriod - outPeriod;
     return {
       seq: idx + 1,
       id: p.id,
@@ -208,11 +227,11 @@ export function computeStockBalanceRows(
       price,
       openingValue: opening * price,
       inPrice: price,
-      inQty,
-      inValue: inQty * price,
+      inQty: inPeriod,
+      inValue: inPeriod * price,
       outPrice: price,
-      outQty,
-      outValue: outQty * price,
+      outQty: outPeriod,
+      outValue: outPeriod * price,
       closing,
       closingValue: closing * price,
     };
@@ -223,7 +242,7 @@ function StockBalanceReport({ products, stockIn, stockOut, getProductUnit, dateF
   products: Product[]; stockIn: StockInRecord[]; stockOut: StockOutRecord[];
   getProductUnit: (id: string) => string; dateFrom?: Date; dateTo?: Date;
 }) {
-  const rows = computeStockBalanceRows(products, stockIn, stockOut, getProductUnit);
+  const rows = computeStockBalanceRows(products, stockIn, stockOut, getProductUnit, dateFrom, dateTo);
   const refDate = dateTo || dateFrom || new Date();
   const monthLabel = format(refDate, "MMMM", { locale: th });
   const yearBE = refDate.getFullYear() + 543;

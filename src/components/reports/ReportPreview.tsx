@@ -91,7 +91,7 @@ export default function ReportPreview({ reportType, dateFrom, dateTo, productFro
     case "monthly":
       return <DailyMonthlyReport stockIn={filteredStockIn} stockOut={filteredStockOut} getProductName={getProductName} getProductUnit={getProductUnit} getCompanyName={getCompanyName} getDepartmentName={getDepartmentName} />;
     case "stock-balance":
-      return <StockBalanceReport products={filteredProducts} stockIn={filteredStockIn} stockOut={filteredStockOut} getProductUnit={getProductUnit} dateFrom={dateFrom} dateTo={dateTo} />;
+      return <StockBalanceReport products={filteredProducts} stockIn={stockIn.filter(r => filterByProduct(r.product_id))} stockOut={stockOut.filter(r => filterByProduct(r.product_id))} getProductUnit={getProductUnit} dateFrom={dateFrom} dateTo={dateTo} />;
     case "stock-card":
       return <StockCardReport products={filteredProducts} stockIn={filteredStockIn} stockOut={filteredStockOut} getProductUnit={getProductUnit} getCompanyName={getCompanyName} getDepartmentName={getDepartmentName} getCategoryName={getCategoryName} dateFrom={dateFrom} />;
     case "product-movement":

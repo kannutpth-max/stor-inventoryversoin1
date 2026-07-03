@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useSheetData } from "@/hooks/useGoogleSheets";
 import { format, parseISO, isSameDay, isSameMonth } from "date-fns";
 import { th } from "date-fns/locale";
+import { parseSheetDate } from "@/lib/utils";
 
 interface Product { id: string; name: string; category_id: string; unit_id: string; price: string; min_stock: string; stock: string; }
 interface Category { id: string; name: string; }

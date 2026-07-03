@@ -1,8 +1,11 @@
 import { Package, PackagePlus, PackageMinus, AlertTriangle, TrendingUp, TrendingDown, BarChart3, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { useSheetData } from "@/hooks/useGoogleSheets";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { parseSheetDate } from "@/lib/utils";
 
 interface Product { id: string; name: string; category_id: string; unit_id: string; min_stock: string; [k: string]: string; }
 interface StockIn { id: string; product_id: string; quantity: string; date: string; company_id: string; [k: string]: string; }
@@ -19,26 +22,27 @@ export default function Dashboard() {
 
   const isLoading = loadingProducts || loadingIn || loadingOut;
 
-  const stats = useMemo(() => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+  const nowDate = new Date();
+  const [selectedMonth, setSelectedMonth] = useState<number>(nowDate.getMonth());
+  const [selectedYear, setSelectedYear] = useState<number>(nowDate.getFullYear());
 
+  const stats = useMemo(() => {
     const parseDate = (d: string) => {
       if (!d) return null;
-      // Try DD/MM/YYYY or YYYY-MM-DD
+      // Support Sheets serial numbers, ISO, and DD/MM/YYYY
       const parts = d.split("/");
       if (parts.length === 3) return new Date(+parts[2], +parts[1] - 1, +parts[0]);
-      return new Date(d);
+      const parsed = parseSheetDate(d);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
     };
 
     const thisMonthIn = stockIn.filter(s => {
       const d = parseDate(s.date);
-      return d && d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      return d && d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
     });
     const thisMonthOut = stockOut.filter(s => {
       const d = parseDate(s.date);
-      return d && d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      return d && d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
     });
 
     const totalIn = thisMonthIn.reduce((sum, s) => sum + (parseInt(s.quantity) || 0), 0);
@@ -61,11 +65,14 @@ export default function Dashboard() {
       percentage: Math.max(0, Math.min(100, Math.round(((stockMap[p.id] || 0) / (parseInt(p.min_stock) || 1)) * 100))),
     }));
 
-    // Recent movements (last 10)
+    // Recent movements in selected month (top 5)
     const allMovements = [
       ...stockIn.map(s => ({ ...s, type: "in" as const })),
       ...stockOut.map(s => ({ ...s, type: "out" as const })),
-    ].sort((a, b) => {
+    ].filter(m => {
+      const d = parseDate(m.date);
+      return d && d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
+    }).sort((a, b) => {
       const da = parseDate(a.date)?.getTime() || 0;
       const db = parseDate(b.date)?.getTime() || 0;
       return db - da;
@@ -85,11 +92,12 @@ export default function Dashboard() {
     }));
 
     return { totalProducts: products.length, totalIn, totalOut, lowStockCount: lowStock.length, lowStock, recentMovements, netChange: totalIn - totalOut };
-  }, [products, stockIn, stockOut, companies, departments]);
+  }, [products, stockIn, stockOut, companies, departments, selectedMonth, selectedYear]);
 
   const thaiMonth = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
-  const now = new Date();
-  const monthLabel = `${thaiMonth[now.getMonth()]} ${now.getFullYear() + 543}`;
+  const monthLabel = `${thaiMonth[selectedMonth]} ${selectedYear + 543}`;
+  const yearOptions = Array.from({ length: 6 }, (_, i) => nowDate.getFullYear() - i);
+  const isCurrentMonth = selectedMonth === nowDate.getMonth() && selectedYear === nowDate.getFullYear();
 
   if (isLoading) {
     return (
@@ -109,7 +117,39 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      <Card>
+        <CardContent className="p-4 flex flex-wrap items-center gap-3">
+          <span className="text-sm font-medium text-muted-foreground">แสดงข้อมูลของ:</span>
+          <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
+            <SelectTrigger className="w-[160px]"><SelectValue placeholder="เดือน" /></SelectTrigger>
+            <SelectContent>
+              {thaiMonth.map((m, i) => (
+                <SelectItem key={i} value={String(i)}>{m}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
+            <SelectTrigger className="w-[140px]"><SelectValue placeholder="ปี" /></SelectTrigger>
+            <SelectContent>
+              {yearOptions.map((y) => (
+                <SelectItem key={y} value={String(y)}>{y + 543}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {!isCurrentMonth && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { setSelectedMonth(nowDate.getMonth()); setSelectedYear(nowDate.getFullYear()); }}
+            >
+              เดือนนี้
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+
         {statsCards.map((stat, index) => (
           <Card key={index} className="overflow-hidden">
             <CardContent className="p-6">

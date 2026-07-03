@@ -117,7 +117,39 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      <Card>
+        <CardContent className="p-4 flex flex-wrap items-center gap-3">
+          <span className="text-sm font-medium text-muted-foreground">แสดงข้อมูลของ:</span>
+          <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
+            <SelectTrigger className="w-[160px]"><SelectValue placeholder="เดือน" /></SelectTrigger>
+            <SelectContent>
+              {thaiMonth.map((m, i) => (
+                <SelectItem key={i} value={String(i)}>{m}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
+            <SelectTrigger className="w-[140px]"><SelectValue placeholder="ปี" /></SelectTrigger>
+            <SelectContent>
+              {yearOptions.map((y) => (
+                <SelectItem key={y} value={String(y)}>{y + 543}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {!isCurrentMonth && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { setSelectedMonth(nowDate.getMonth()); setSelectedYear(nowDate.getFullYear()); }}
+            >
+              เดือนนี้
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+
         {statsCards.map((stat, index) => (
           <Card key={index} className="overflow-hidden">
             <CardContent className="p-6">

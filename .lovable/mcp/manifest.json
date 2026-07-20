@@ -1,0 +1,111 @@
+{
+  "version": 1,
+  "sdk_version": "0.23.0",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "none"
+  },
+  "mcp": {
+    "server": {
+      "name": "prachathipat-inventory-mcp",
+      "version": "0.1.0",
+      "title": "ระบบวัสดุคงคลัง โรงพยาบาลประชาธิปัตย์ (MCP)"
+    },
+    "tools": [
+      {
+        "name": "list_materials",
+        "title": "List materials",
+        "description": "List all materials (วัสดุ) in the hospital inventory, including id, name, category, and unit. Optionally filter by a substring match on id or name.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "search": {
+              "description": "Optional substring to match against material id or name.",
+              "type": "string"
+            },
+            "limit": {
+              "description": "Maximum number of rows to return (default 200).",
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_stock_balance",
+        "title": "Get stock balance",
+        "description": "Compute current stock balance for each material by aggregating all stock-in and stock-out transactions. Optionally filter by material id.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "material_id": {
+              "description": "Optional material id (e.g. B1) to return balance for a single material.",
+              "type": "string"
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_transactions",
+        "title": "List stock transactions",
+        "description": "List stock-in (รับเข้า) or stock-out (เบิก) transactions. Optionally filter by material id and by ISO date range (YYYY-MM-DD).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "in",
+                "out"
+              ],
+              "description": "'in' for stock-in (รับเข้า), 'out' for stock-out (เบิก)."
+            },
+            "material_id": {
+              "description": "Optional material id filter (e.g. B1).",
+              "type": "string"
+            },
+            "date_from": {
+              "description": "Optional start date YYYY-MM-DD (inclusive).",
+              "type": "string"
+            },
+            "date_to": {
+              "description": "Optional end date YYYY-MM-DD (inclusive).",
+              "type": "string"
+            },
+            "limit": {
+              "description": "Max rows to return (default 200).",
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}

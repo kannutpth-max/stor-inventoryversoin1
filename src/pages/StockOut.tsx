@@ -72,6 +72,8 @@ export default function StockOut() {
         setDate(parseSheetDate(first.date));
         setWithdrawNo(first.requisition_no);
         setDepartmentId(first.department_id);
+        setRequester(first.requester || "");
+        setPosition(first.position || "");
         setItems(records.map(r => {
           const product = products.find(p => p.id === r.product_id);
           const qty = parseInt(r.quantity) || 0;

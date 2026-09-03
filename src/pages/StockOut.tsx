@@ -171,7 +171,11 @@ export default function StockOut() {
       return { item, newQty, prevQty, delta };
     });
 
-    const hasWork = changes.some(c => c.delta !== 0 || (c.item.status !== "dispensed" && c.newQty > 0));
+    const infoChanged = items.some(item => {
+      const record = stockOuts.find(r => r.id === item.recordId);
+      return record && ((record.requester || "") !== requester || (record.position || "") !== position);
+    });
+    const hasWork = changes.some(c => c.delta !== 0 || (c.item.status !== "dispensed" && c.newQty > 0)) || infoChanged;
     if (!hasWork) {
       toast({ title: "ไม่มีรายการที่ต้องตัดสต็อกเพิ่ม" });
       return;
@@ -212,7 +216,16 @@ export default function StockOut() {
         const record = stockOuts.find(r => r.id === item.recordId);
         if (!record) continue;
         // Only write back if something changed
-        if (delta === 0 && record.status === "dispensed") continue;
+        if (delta === 0 && record.status === "dispensed") {
+          // still sync requester/position if they were edited
+          if ((record.requester || "") !== requester || (record.position || "") !== position) {
+            await updateStockOut.mutateAsync({
+              id: item.recordId,
+              data: { ...record, requester, position },
+            });
+          }
+          continue;
+        }
         await updateStockOut.mutateAsync({
           id: item.recordId,
           data: { ...record, status: "dispensed", quantity: newQty.toString(), requester, position },

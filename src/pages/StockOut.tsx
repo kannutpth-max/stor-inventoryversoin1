@@ -212,7 +212,16 @@ export default function StockOut() {
         const record = stockOuts.find(r => r.id === item.recordId);
         if (!record) continue;
         // Only write back if something changed
-        if (delta === 0 && record.status === "dispensed") continue;
+        if (delta === 0 && record.status === "dispensed") {
+          // still sync requester/position if they were edited
+          if ((record.requester || "") !== requester || (record.position || "") !== position) {
+            await updateStockOut.mutateAsync({
+              id: item.recordId,
+              data: { ...record, requester, position },
+            });
+          }
+          continue;
+        }
         await updateStockOut.mutateAsync({
           id: item.recordId,
           data: { ...record, status: "dispensed", quantity: newQty.toString(), requester, position },

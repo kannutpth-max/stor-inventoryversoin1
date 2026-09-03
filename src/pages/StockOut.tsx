@@ -294,18 +294,25 @@ export default function StockOut() {
             พิมพ์ใบเบิก
           </Button>
           {isEditMode ? (
-            items.every(i => i.status === "dispensed") ? (
-              <Button disabled variant="outline">
+            <>
+              <Button variant="secondary" onClick={handleSaveEdit} disabled={updateStockOut.isPending}>
+                {updateStockOut.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 <Save className="mr-2 h-4 w-4" />
-                จ่ายของแล้ว
+                บันทึกการแก้ไข
               </Button>
-            ) : (
-              <Button onClick={handleDispense} disabled={updateStockOut.isPending || updateProduct.isPending}>
-                {(updateStockOut.isPending || updateProduct.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                <Save className="mr-2 h-4 w-4" />
-                จ่ายของแล้ว
-              </Button>
-            )
+              {items.every(i => i.status === "dispensed") ? (
+                <Button disabled variant="outline">
+                  <Save className="mr-2 h-4 w-4" />
+                  จ่ายของแล้ว
+                </Button>
+              ) : (
+                <Button onClick={handleDispense} disabled={updateStockOut.isPending || updateProduct.isPending}>
+                  {(updateStockOut.isPending || updateProduct.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  <Save className="mr-2 h-4 w-4" />
+                  จ่ายของแล้ว
+                </Button>
+              )}
+            </>
           ) : (
             <Button onClick={handleSave} disabled={createMutation.isPending}>
               {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

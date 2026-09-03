@@ -147,6 +147,8 @@ export default function StockOut() {
           date: format(date, "yyyy-MM-dd"),
           requisition_no: withdrawNo,
           department_id: departmentId,
+          requester: requester,
+          position: position,
           product_id: item.productId,
           quantity: item.quantity.toString(),
           created_at: new Date().toISOString(),

@@ -215,7 +215,7 @@ export default function StockOut() {
         if (delta === 0 && record.status === "dispensed") continue;
         await updateStockOut.mutateAsync({
           id: item.recordId,
-          data: { ...record, status: "dispensed", quantity: newQty.toString() },
+          data: { ...record, status: "dispensed", quantity: newQty.toString(), requester, position },
         });
       }
 

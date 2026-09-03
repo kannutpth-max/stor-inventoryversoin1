@@ -162,6 +162,30 @@ export default function StockOut() {
     }
   };
 
+  // Save edits (requester/position/quantity) to existing records without dispensing/deducting stock
+  const handleSaveEdit = async () => {
+    if (!isEditMode) return;
+    try {
+      for (const item of items) {
+        if (!item.recordId) continue;
+        const record = stockOuts.find(r => r.id === item.recordId);
+        if (!record) continue;
+        const next = {
+          ...record,
+          date: format(date, "yyyy-MM-dd"),
+          department_id: departmentId,
+          requester: requester,
+          position: position,
+          quantity: item.quantity.toString(),
+        };
+        await updateStockOut.mutateAsync({ id: item.recordId, data: next });
+      }
+      toast({ title: "บันทึกการแก้ไขสำเร็จ" });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "เกิดข้อผิดพลาด", description: e.message });
+    }
+  };
+
   const handleDispense = async () => {
     // Compute per-item delta to deduct (positive = deduct, negative = return)
     const changes = items.map(item => {

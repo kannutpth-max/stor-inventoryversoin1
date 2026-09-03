@@ -26,6 +26,7 @@ interface Unit { id: string; name: string; }
 interface StockOutRecord {
   id: string; date: string; requisition_no: string; department_id: string;
   product_id: string; quantity: string; status?: string; created_at: string;
+  requester?: string; position?: string;
 }
 
 interface StockOutItem {
@@ -72,6 +73,8 @@ export default function StockOut() {
         setDate(parseSheetDate(first.date));
         setWithdrawNo(first.requisition_no);
         setDepartmentId(first.department_id);
+        setRequester(first.requester || "");
+        setPosition(first.position || "");
         setItems(records.map(r => {
           const product = products.find(p => p.id === r.product_id);
           const qty = parseInt(r.quantity) || 0;
@@ -144,6 +147,8 @@ export default function StockOut() {
           date: format(date, "yyyy-MM-dd"),
           requisition_no: withdrawNo,
           department_id: departmentId,
+          requester: requester,
+          position: position,
           product_id: item.productId,
           quantity: item.quantity.toString(),
           created_at: new Date().toISOString(),
@@ -210,7 +215,7 @@ export default function StockOut() {
         if (delta === 0 && record.status === "dispensed") continue;
         await updateStockOut.mutateAsync({
           id: item.recordId,
-          data: { ...record, status: "dispensed", quantity: newQty.toString() },
+          data: { ...record, status: "dispensed", quantity: newQty.toString(), requester, position },
         });
       }
 

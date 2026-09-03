@@ -171,7 +171,11 @@ export default function StockOut() {
       return { item, newQty, prevQty, delta };
     });
 
-    const hasWork = changes.some(c => c.delta !== 0 || (c.item.status !== "dispensed" && c.newQty > 0));
+    const infoChanged = items.some(item => {
+      const record = stockOuts.find(r => r.id === item.recordId);
+      return record && ((record.requester || "") !== requester || (record.position || "") !== position);
+    });
+    const hasWork = changes.some(c => c.delta !== 0 || (c.item.status !== "dispensed" && c.newQty > 0)) || infoChanged;
     if (!hasWork) {
       toast({ title: "ไม่มีรายการที่ต้องตัดสต็อกเพิ่ม" });
       return;

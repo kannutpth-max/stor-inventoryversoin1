@@ -26,6 +26,7 @@ interface Unit { id: string; name: string; }
 interface StockOutRecord {
   id: string; date: string; requisition_no: string; department_id: string;
   product_id: string; quantity: string; status?: string; created_at: string;
+  requester?: string; position?: string;
 }
 
 interface StockOutItem {

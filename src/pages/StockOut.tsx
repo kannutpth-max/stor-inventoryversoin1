@@ -540,17 +540,12 @@ export default function StockOut() {
                   <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">{item.quantity.toLocaleString()}</TableCell>
                   {isEditMode ? (
                     <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">
-                      {item.status === "dispensed" ? (
-                        <span className="text-muted-foreground">{item.dispenseQty || item.quantity}</span>
-                      ) : (
-                        <Input
-                          type="number"
-                          value={item.dispenseQty || ""}
-                          onChange={(e) => updateDispenseQty(item.id, parseInt(e.target.value) || 0)}
-                          className="h-6 w-16 text-xs text-center p-0 mx-auto print:border-0 print:border-b print:rounded-none"
-                          max={item.quantity}
-                        />
-                      )}
+                      <Input
+                        type="number"
+                        value={item.dispenseQty || ""}
+                        onChange={(e) => updateDispenseQty(item.id, parseInt(e.target.value) || 0)}
+                        className="h-6 w-16 text-xs text-center p-0 mx-auto print:border-0 print:border-b print:rounded-none"
+                      />
                     </TableCell>
                   ) : (
                     <TableCell className="border border-border print:border-black text-center py-0.5 text-xs"></TableCell>

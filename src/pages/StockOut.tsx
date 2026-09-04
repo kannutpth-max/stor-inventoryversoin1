@@ -162,38 +162,81 @@ export default function StockOut() {
     }
   };
 
-  // Save edits (requester/position/header info) to existing records without dispensing/deducting stock
-  // Only writes records whose values actually changed, to avoid duplicate/repeated saving
+  // Save edits (header info + dispensed quantity) — writes ONLY changed records,
+  // and adjusts stock by the delta of dispensed qty to avoid duplicate deductions
   const handleSaveEdit = async () => {
     if (!isEditMode) return;
+    const newDate = format(date, "yyyy-MM-dd");
+
+    // Net stock delta per product (positive = deduct more, negative = return)
+    const netByProduct = new Map<string, number>();
+    for (const item of items) {
+      if (!item.recordId) continue;
+      const delta = (item.dispenseQty || 0) - (item.originalDispenseQty || 0);
+      if (delta === 0) continue;
+      netByProduct.set(item.productId, (netByProduct.get(item.productId) || 0) + delta);
+    }
+    for (const [pid, net] of netByProduct.entries()) {
+      const product = products.find(p => p.id === pid);
+      const currentStock = parseInt(product?.stock || "0") || 0;
+      if (net > 0 && net > currentStock) {
+        toast({ variant: "destructive", title: `${product?.name || pid} คงเหลือไม่เพียงพอ (คงเหลือ ${currentStock})` });
+        return;
+      }
+    }
+
     try {
       let changed = 0;
-      const newDate = format(date, "yyyy-MM-dd");
+      for (const [pid, net] of netByProduct.entries()) {
+        const product = products.find(p => p.id === pid);
+        if (!product) continue;
+        const currentStock = parseInt(product.stock) || 0;
+        await updateProduct.mutateAsync({
+          id: product.id,
+          data: { ...product, stock: (currentStock - net).toString() },
+        });
+      }
+
       for (const item of items) {
         if (!item.recordId) continue;
         const record = stockOuts.find(r => r.id === item.recordId);
         if (!record) continue;
+        const qtyDelta = (item.dispenseQty || 0) - (item.originalDispenseQty || 0);
         const isSame =
+          qtyDelta === 0 &&
           (record.date || "") === newDate &&
           (record.department_id || "") === departmentId &&
           (record.requester || "") === requester &&
           (record.position || "") === position;
         if (isSame) continue; // nothing edited for this record
-        const next = {
+        const next: Record<string, string> = {
           ...record,
           date: newDate,
           department_id: departmentId,
           requester: requester,
           position: position,
         };
+        if (qtyDelta !== 0) {
+          next.quantity = (item.dispenseQty || 0).toString();
+          next.status = (item.dispenseQty || 0) > 0 ? "dispensed" : "";
+        }
         await updateStockOut.mutateAsync({ id: item.recordId, data: next });
         changed++;
+      }
+
+      if (changed > 0 || netByProduct.size > 0) {
+        setItems(items.map(i => ({
+          ...i,
+          status: (i.dispenseQty || 0) > 0 ? "dispensed" : i.status,
+          originalDispenseQty: i.dispenseQty || 0,
+        })));
       }
       toast({ title: changed > 0 ? "บันทึกการแก้ไขสำเร็จ" : "ไม่มีข้อมูลที่แก้ไข" });
     } catch (e: any) {
       toast({ variant: "destructive", title: "เกิดข้อผิดพลาด", description: e.message });
     }
   };
+
 
 
   const handleDispense = async () => {

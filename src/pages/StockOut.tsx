@@ -202,9 +202,13 @@ export default function StockOut() {
         const record = stockOuts.find(r => r.id === item.recordId);
         if (!record) continue;
         const qtyDelta = (item.dispenseQty || 0) - (item.originalDispenseQty || 0);
+        const recordQty = parseInt(record.quantity) || 0;
+        const reqQtyChanged = (item.quantity || 0) !== recordQty;
         const isSame =
           qtyDelta === 0 &&
+          !reqQtyChanged &&
           (record.date || "") === newDate &&
+          (record.requisition_no || "") === withdrawNo &&
           (record.department_id || "") === departmentId &&
           (record.requester || "") === requester &&
           (record.position || "") === position;
@@ -212,6 +216,7 @@ export default function StockOut() {
         const next: Record<string, string> = {
           ...record,
           date: newDate,
+          requisition_no: withdrawNo,
           department_id: departmentId,
           requester: requester,
           position: position,
@@ -219,6 +224,8 @@ export default function StockOut() {
         if (qtyDelta !== 0) {
           next.quantity = (item.dispenseQty || 0).toString();
           next.status = (item.dispenseQty || 0) > 0 ? "dispensed" : "";
+        } else if (reqQtyChanged) {
+          next.quantity = (item.quantity || 0).toString();
         }
         await updateStockOut.mutateAsync({ id: item.recordId, data: next });
         changed++;

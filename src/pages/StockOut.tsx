@@ -202,9 +202,13 @@ export default function StockOut() {
         const record = stockOuts.find(r => r.id === item.recordId);
         if (!record) continue;
         const qtyDelta = (item.dispenseQty || 0) - (item.originalDispenseQty || 0);
+        const recordQty = parseInt(record.quantity) || 0;
+        const reqQtyChanged = (item.quantity || 0) !== recordQty;
         const isSame =
           qtyDelta === 0 &&
+          !reqQtyChanged &&
           (record.date || "") === newDate &&
+          (record.requisition_no || "") === withdrawNo &&
           (record.department_id || "") === departmentId &&
           (record.requester || "") === requester &&
           (record.position || "") === position;
@@ -212,6 +216,7 @@ export default function StockOut() {
         const next: Record<string, string> = {
           ...record,
           date: newDate,
+          requisition_no: withdrawNo,
           department_id: departmentId,
           requester: requester,
           position: position,
@@ -219,6 +224,8 @@ export default function StockOut() {
         if (qtyDelta !== 0) {
           next.quantity = (item.dispenseQty || 0).toString();
           next.status = (item.dispenseQty || 0) > 0 ? "dispensed" : "";
+        } else if (reqQtyChanged) {
+          next.quantity = (item.quantity || 0).toString();
         }
         await updateStockOut.mutateAsync({ id: item.recordId, data: next });
         changed++;
@@ -324,6 +331,10 @@ export default function StockOut() {
 
   const updateDispenseQty = (id: string, qty: number) => {
     setItems(items.map(i => i.id === id ? { ...i, dispenseQty: qty } : i));
+  };
+
+  const updateRequestQty = (id: string, qty: number) => {
+    setItems(items.map(i => i.id === id ? { ...i, quantity: qty } : i));
   };
 
   const emptyRows = Math.max(0, 17 - items.length);
@@ -465,7 +476,7 @@ export default function StockOut() {
           </div>
           <div className="flex items-center gap-2 flex-wrap print:hidden">
             <Label className="whitespace-nowrap font-medium text-xs">หน่วยงานผู้เบิก (ฝ่าย/งาน)</Label>
-            <Select value={departmentId} onValueChange={setDepartmentId} disabled={isEditMode}>
+            <Select value={departmentId} onValueChange={setDepartmentId}>
               <SelectTrigger className="h-8 text-sm min-w-[200px] flex-1">
                 <SelectValue placeholder="เลือกหน่วยงาน" />
               </SelectTrigger>
@@ -482,7 +493,7 @@ export default function StockOut() {
             <Label className="whitespace-nowrap font-medium">วันที่:</Label>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className={cn("flex-1 justify-start text-left font-normal h-8", !date && "text-muted-foreground")} disabled={isEditMode}>
+                <Button variant="outline" size="sm" className={cn("flex-1 justify-start text-left font-normal h-8", !date && "text-muted-foreground")}>
                   <Calendar className="mr-2 h-3 w-3" />
                   {date ? formatThaiBuddhistDate(date) : "เลือกวันที่"}
                 </Button>
@@ -494,7 +505,7 @@ export default function StockOut() {
           </div>
           <div className="flex items-center gap-2">
             <Label className="whitespace-nowrap font-medium">เลขที่:</Label>
-            <Input value={withdrawNo} onChange={(e) => setWithdrawNo(e.target.value)} placeholder="WD-XXXX" className="h-8 text-sm" disabled={isEditMode} />
+            <Input value={withdrawNo} onChange={(e) => setWithdrawNo(e.target.value)} placeholder="WD-XXXX" className="h-8 text-sm" />
           </div>
         </div>
 
@@ -580,7 +591,18 @@ export default function StockOut() {
                   <TableCell className="border border-border print:border-black py-0.5 text-xs">{item.productName}</TableCell>
                   <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">{item.unit}</TableCell>
                   <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">{item.stock.toLocaleString()}</TableCell>
-                  <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">{item.quantity.toLocaleString()}</TableCell>
+                  {isEditMode ? (
+                    <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">
+                      <Input
+                        type="number"
+                        value={item.quantity || ""}
+                        onChange={(e) => updateRequestQty(item.id, parseInt(e.target.value) || 0)}
+                        className="h-6 w-16 text-xs text-center p-0 mx-auto print:border-0 print:border-b print:rounded-none"
+                      />
+                    </TableCell>
+                  ) : (
+                    <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">{item.quantity.toLocaleString()}</TableCell>
+                  )}
                   {isEditMode ? (
                     <TableCell className="border border-border print:border-black text-center py-0.5 text-xs">
                       <Input

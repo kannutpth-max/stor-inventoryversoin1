@@ -162,29 +162,39 @@ export default function StockOut() {
     }
   };
 
-  // Save edits (requester/position/quantity) to existing records without dispensing/deducting stock
+  // Save edits (requester/position/header info) to existing records without dispensing/deducting stock
+  // Only writes records whose values actually changed, to avoid duplicate/repeated saving
   const handleSaveEdit = async () => {
     if (!isEditMode) return;
     try {
+      let changed = 0;
+      const newDate = format(date, "yyyy-MM-dd");
       for (const item of items) {
         if (!item.recordId) continue;
         const record = stockOuts.find(r => r.id === item.recordId);
         if (!record) continue;
+        const isSame =
+          (record.date || "") === newDate &&
+          (record.department_id || "") === departmentId &&
+          (record.requester || "") === requester &&
+          (record.position || "") === position;
+        if (isSame) continue; // nothing edited for this record
         const next = {
           ...record,
-          date: format(date, "yyyy-MM-dd"),
+          date: newDate,
           department_id: departmentId,
           requester: requester,
           position: position,
-          quantity: item.quantity.toString(),
         };
         await updateStockOut.mutateAsync({ id: item.recordId, data: next });
+        changed++;
       }
-      toast({ title: "บันทึกการแก้ไขสำเร็จ" });
+      toast({ title: changed > 0 ? "บันทึกการแก้ไขสำเร็จ" : "ไม่มีข้อมูลที่แก้ไข" });
     } catch (e: any) {
       toast({ variant: "destructive", title: "เกิดข้อผิดพลาด", description: e.message });
     }
   };
+
 
   const handleDispense = async () => {
     // Compute per-item delta to deduct (positive = deduct, negative = return)

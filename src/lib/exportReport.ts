@@ -1,6 +1,15 @@
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { parseSheetDate } from "@/lib/utils";
+
+const TH_MONTHS_SHORT = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+const TH_MONTHS_LONG = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+function stockCardThaiDate(v: any): string {
+  const d = parseSheetDate(v);
+  if (Number.isNaN(d.getTime())) return String(v ?? "");
+  return `${d.getDate()} ${TH_MONTHS_SHORT[d.getMonth()]} ${d.getFullYear() + 543}`;
+}
 
 interface ExportData {
   title: string;
@@ -119,7 +128,7 @@ function buildStockCardProductData(params: StockCardExportParams) {
     const movements = [
       ...pIn.map((r: any) => ({ ...r, type: "in" })),
       ...pOut.map((r: any) => ({ ...r, type: "out" })),
-    ].sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+    ].sort((a, b) => (parseSheetDate(a.date).getTime() || 0) - (parseSheetDate(b.date).getTime() || 0));
 
     const price = parseFloat(product.price) || 0;
     const unitName = helpers.getProductUnit(product.id);
@@ -130,7 +139,7 @@ function buildStockCardProductData(params: StockCardExportParams) {
     const totalOut = pOut.reduce((s: number, r: any) => s + (parseInt(r.quantity) || 0), 0);
     openingBalance = openingBalance - totalIn + totalOut;
 
-    const openingMonth = dateFrom ? dateFrom.toLocaleDateString("th-TH", { month: "long", year: "numeric" }) : "";
+    const openingMonth = dateFrom ? `${TH_MONTHS_LONG[dateFrom.getMonth()]} ${dateFrom.getFullYear() + 543}` : "";
 
     let balance = openingBalance;
     const rows = movements.map((m: any) => {
@@ -139,7 +148,7 @@ function buildStockCardProductData(params: StockCardExportParams) {
       const ref = m.type === "in" ? m.invoice_no : m.requisition_no;
       const party = m.type === "in" ? helpers.getCompanyName(m.company_id) : helpers.getDepartmentName(m.department_id);
       return {
-        date: m.date,
+        date: stockCardThaiDate(m.date),
         party,
         ref,
         price,

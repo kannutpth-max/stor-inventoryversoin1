@@ -374,9 +374,9 @@ function StockCardReport({ products, stockIn, stockOut, getProductUnit, getCompa
   getProductUnit: (id: string) => string; getCompanyName: (id: string) => string; getDepartmentName: (id: string) => string;
   getCategoryName: (id: string) => string; dateFrom?: Date;
 }) {
-  const formatThaiDate = (dateStr: string) => {
+  const formatThaiDate = (dateStr: string | number) => {
     const d = parseSheetDate(dateStr);
-    if (Number.isNaN(d.getTime())) return dateStr;
+    if (Number.isNaN(d.getTime())) return String(dateStr ?? "");
     return `${format(d, "d MMM", { locale: th })} ${d.getFullYear() + 543}`;
   };
 
@@ -387,7 +387,7 @@ function StockCardReport({ products, stockIn, stockOut, getProductUnit, getCompa
       ) : products.map((product, pIdx) => {
         const pIn = stockIn.filter(r => r.product_id === product.id).map(r => ({ ...r, type: "in" as const }));
         const pOut = stockOut.filter(r => r.product_id === product.id).map(r => ({ ...r, type: "out" as const }));
-        const movements = [...pIn, ...pOut].sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+        const movements = [...pIn, ...pOut].sort((a, b) => (parseSheetDate(a.date).getTime() || 0) - (parseSheetDate(b.date).getTime() || 0));
         if (movements.length === 0 && pIn.length === 0 && pOut.length === 0) return null;
 
         const price = parseFloat(product.price) || 0;
@@ -408,7 +408,7 @@ function StockCardReport({ products, stockIn, stockOut, getProductUnit, getCompa
           return { ...m, qty, balance, totalPrice: balance * price };
         });
 
-        const openingMonth = dateFrom ? format(dateFrom, "MMMM yyyy", { locale: th }) : "";
+        const openingMonth = dateFrom ? `${format(dateFrom, "MMMM", { locale: th })} ${dateFrom.getFullYear() + 543}` : "";
 
         return (
           <div key={product.id} className="rounded-md border bg-card print:break-before-page">

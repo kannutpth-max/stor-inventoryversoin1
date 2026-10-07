@@ -375,10 +375,9 @@ function StockCardReport({ products, stockIn, stockOut, getProductUnit, getCompa
   getCategoryName: (id: string) => string; dateFrom?: Date;
 }) {
   const formatThaiDate = (dateStr: string) => {
-    try {
-      const d = parseISO(dateStr);
-      return format(d, "d MMM yy", { locale: th });
-    } catch { return dateStr; }
+    const d = parseSheetDate(dateStr);
+    if (Number.isNaN(d.getTime())) return dateStr;
+    return `${format(d, "d MMM", { locale: th })} ${d.getFullYear() + 543}`;
   };
 
   return (

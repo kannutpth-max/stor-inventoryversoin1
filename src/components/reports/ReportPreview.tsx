@@ -425,7 +425,7 @@ function StockCardReport({ products, stockIn, stockOut, getProductUnit, getCompa
               </div>
               <div className="flex gap-2">
                 <span className="text-muted-foreground min-w-[100px]">ส่วนราชการ</span>
-                <span>: -</span>
+                <span>: โรงพยาบาลประชาธิปัตย์ อำเภอธัญบุรี</span>
               </div>
               <div className="flex gap-2">
                 <span className="text-muted-foreground min-w-[100px]">ประเภท</span>
@@ -433,7 +433,7 @@ function StockCardReport({ products, stockIn, stockOut, getProductUnit, getCompa
               </div>
               <div className="flex gap-2">
                 <span className="text-muted-foreground min-w-[100px]">กลุ่มงาน</span>
-                <span>: -</span>
+                <span>: บริหารงานทั่วไป</span>
               </div>
               <div className="flex gap-2">
                 <span className="text-muted-foreground min-w-[100px]">ชื่อหรือชนิดวัสดุ</span>
@@ -441,7 +441,7 @@ function StockCardReport({ products, stockIn, stockOut, getProductUnit, getCompa
               </div>
               <div className="flex gap-2">
                 <span className="text-muted-foreground min-w-[100px]">หน่วยงาน</span>
-                <span>: -</span>
+                <span>: พัสดุและซ่อมบำรุง</span>
               </div>
               <div className="flex gap-2">
                 <span className="text-muted-foreground min-w-[100px]">ขนาดหรือลักษณะ</span>

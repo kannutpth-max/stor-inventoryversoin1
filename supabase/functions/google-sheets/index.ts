@@ -79,7 +79,7 @@ async function getAccessToken(credentials: ServiceAccountCredentials): Promise<s
 }
 
 const ALLOWED_SHEETS = ["products", "categories", "units", "companies", "departments", "stock_in", "stock_out"];
-const ALLOWED_ACTIONS = ["read", "create", "update", "delete"];
+const ALLOWED_ACTIONS = ["read", "readAll", "create", "update", "delete"];
 const MAX_CELL_LENGTH = 5000;
 
 function sanitizeCellValue(value: unknown): string {
@@ -337,7 +337,7 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const { action, sheet, data, id } = body as { action?: string; sheet?: string; data?: Record<string, unknown>; id?: string };
+    const { action, sheet, data, id, sheets } = body as { action?: string; sheet?: string; data?: Record<string, unknown>; id?: string; sheets?: unknown };
 
     // Validate action and sheet
     if (!action || !ALLOWED_ACTIONS.includes(action)) {
@@ -346,7 +346,7 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (!sheet || !ALLOWED_SHEETS.includes(sheet)) {
+    if (action !== "readAll" && (!sheet || !ALLOWED_SHEETS.includes(sheet))) {
       return new Response(JSON.stringify({ success: false, error: "Invalid sheet" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -369,6 +369,19 @@ serve(async (req) => {
     switch (action) {
       case "read": {
         result = await getSheetData(accessToken, googleSheetId, sheet);
+        break;
+      }
+      case "readAll": {
+        const requested = Array.isArray(sheets)
+          ? [...new Set(sheets.filter((s): s is string => typeof s === "string" && ALLOWED_SHEETS.includes(s)))]
+          : [];
+        if (requested.length === 0) {
+          return new Response(JSON.stringify({ success: false, error: "Invalid sheets" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        result = await batchGetSheetData(accessToken, googleSheetId, requested.slice(0, 10));
         break;
       }
       case "create": {
@@ -412,7 +425,8 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error("Error:", error);
-    return new Response(JSON.stringify({ success: false, error: "Operation failed" }), {
+    const message = error instanceof Error ? error.message : "Operation failed";
+    return new Response(JSON.stringify({ success: false, error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

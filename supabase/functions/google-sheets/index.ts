@@ -19,6 +19,32 @@ function toBase64Url(str: string): string {
 // re-minting a JWT + token endpoint call on every single request.
 const TOKEN_CACHE = globalThis as unknown as { __gsAccessToken?: { token: string; exp: number } };
 
+// Short-lived cache of sheet reads. Google allows only 60 reads/minute, and
+// page loads, retries and concurrent tabs can easily exceed that. Serving
+// repeated reads from this cache (invalidated on every write) keeps us inside
+// the quota; stale data older than TTL is still served as a fallback when
+// Google is rate limiting instead of failing the request.
+const SHEET_CACHE = globalThis as unknown as { __gsSheetCache?: Map<string, { rows: Record<string, string>[]; ts: number }> };
+const CACHE_TTL_MS = 30_000;
+
+function cacheGet(sheet: string, maxAgeMs: number = CACHE_TTL_MS): Record<string, string>[] | null {
+  const cache = (SHEET_CACHE.__gsSheetCache ??= new Map());
+  const entry = cache.get(sheet);
+  if (entry && Date.now() - entry.ts <= maxAgeMs) return entry.rows;
+  return null;
+}
+
+function cacheSet(sheet: string, rows: Record<string, string>[]) {
+  (SHEET_CACHE.__gsSheetCache ??= new Map()).set(sheet, { rows, ts: Date.now() });
+}
+
+function cacheInvalidate(sheet?: string) {
+  const cache = SHEET_CACHE.__gsSheetCache;
+  if (!cache) return;
+  if (sheet) cache.delete(sheet);
+  else cache.clear();
+}
+
 async function getAccessToken(credentials: ServiceAccountCredentials): Promise<string> {
   const cached = TOKEN_CACHE.__gsAccessToken;
   if (cached && cached.exp > Date.now() + 60_000) return cached.token;

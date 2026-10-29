@@ -25,6 +25,11 @@ export function useSheetData<T = Record<string, string>>(sheet: SheetName) {
     queryKey: ALL_SHEETS_KEY,
     queryFn: fetchAllSheets,
     staleTime: 15_000,
+    // Avoid hammering Google's read quota: no refetch on tab focus and at
+    // most one spaced-out retry when a read fails.
+    refetchOnWindowFocus: false,
+    retry: 1,
+    retryDelay: 5_000,
     select: (all) => ((all?.[sheet] ?? []) as unknown) as T[],
   });
 }

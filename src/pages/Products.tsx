@@ -37,6 +37,7 @@ export default function Products() {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [isOpen, setIsOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState({ id: "", name: "", category_id: "", unit_id: "", price: "", min_stock: "", stock: "", image: "" });
@@ -63,7 +64,9 @@ export default function Products() {
   const getUnitName = (id: string) => units.find(u => u.id === id)?.name || id;
 
   const filteredProducts = products.filter(
-    (p) => p.name.toLowerCase().includes(search.toLowerCase()) || p.id.toLowerCase().includes(search.toLowerCase())
+    (p) =>
+      (categoryFilter === "all" || p.category_id === categoryFilter) &&
+      (p.name.toLowerCase().includes(search.toLowerCase()) || p.id.toLowerCase().includes(search.toLowerCase()))
   );
 
   const handleOpenDialog = (product?: Product) => {
@@ -205,11 +208,20 @@ export default function Products() {
           </Dialog>
         </CardHeader>
         <CardContent>
-          <div className="mb-4">
-            <div className="relative">
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <div className="relative flex-1 min-w-[220px] max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="ค้นหาวัสดุ..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 max-w-sm" />
+              <Input placeholder="ค้นหาวัสดุ..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
             </div>
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-[220px]">
+                <SelectValue placeholder="ทุกประเภท" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">ทุกประเภท</SelectItem>
+                {categories.map((cat) => (<SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>))}
+              </SelectContent>
+            </Select>
           </div>
           {isLoading ? (
             <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>

@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useSheetData, useSheetCreate, useSheetUpdate, useSheetDelete } from "@/hooks/useGoogleSheets";
+import { roundPrice, clampPriceInput, formatMoney } from "@/lib/utils";
 
 interface Product {
   id: string; name: string; category_id: string; unit_id: string;
@@ -86,11 +87,12 @@ export default function Products() {
       return;
     }
     try {
+      const payload = { ...formData, price: formData.price === "" ? "" : String(roundPrice(formData.price)) };
       if (editingProduct) {
-        await updateMutation.mutateAsync({ id: editingProduct.id, data: formData });
+        await updateMutation.mutateAsync({ id: editingProduct.id, data: payload });
         toast({ title: "แก้ไขวัสดุสำเร็จ" });
       } else {
-        await createMutation.mutateAsync(formData);
+        await createMutation.mutateAsync(payload);
         toast({ title: "เพิ่มวัสดุสำเร็จ" });
       }
       setIsOpen(false);
@@ -160,7 +162,7 @@ export default function Products() {
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label className="text-right">ราคา (บาท)</Label>
-                  <Input type="number" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} className="col-span-3" />
+                  <Input type="number" step="0.01" value={formData.price} onChange={(e) => setFormData({ ...formData, price: clampPriceInput(e.target.value) })} className="col-span-3" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label className="text-right">เกณฑ์ขั้นต่ำ</Label>
@@ -263,7 +265,7 @@ export default function Products() {
                         <TableCell>{product.name}</TableCell>
                         <TableCell>{getCategoryName(product.category_id)}</TableCell>
                         <TableCell>{getUnitName(product.unit_id)}</TableCell>
-                        <TableCell className="text-right">{parseFloat(product.price || "0").toLocaleString()}</TableCell>
+                        <TableCell className="text-right">{formatMoney(roundPrice(product.price))}</TableCell>
                         <TableCell className="text-right">{stock.toLocaleString()}</TableCell>
                         <TableCell className="text-right">{minStock.toLocaleString()}</TableCell>
                         <TableCell className="text-center">

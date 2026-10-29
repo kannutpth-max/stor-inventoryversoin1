@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useSheetData } from "@/hooks/useGoogleSheets";
 import { format, parseISO, isSameDay, isSameMonth } from "date-fns";
 import { th } from "date-fns/locale";
-import { parseSheetDate } from "@/lib/utils";
+import { parseSheetDate, roundPrice } from "@/lib/utils";
 
 interface Product { id: string; name: string; category_id: string; unit_id: string; price: string; min_stock: string; stock: string; }
 interface Category { id: string; name: string; }
@@ -201,7 +201,7 @@ export function computeStockBalanceRows(
     : new Date(periodStart.getFullYear(), periodStart.getMonth() + 1, 0, 23, 59, 59, 999);
 
   return products.map((p, idx) => {
-    const price = parseFloat(p.price) || 0;
+    const price = roundPrice(parseFloat(p.price));
     const pIn = stockIn.filter(r => r.product_id === p.id);
     const pOut = stockOut.filter(r => r.product_id === p.id);
     const sumQty = (arr: { date: string; quantity: string }[], pred: (d: Date) => boolean) =>
@@ -390,7 +390,7 @@ function StockCardReport({ products, stockIn, stockOut, getProductUnit, getCompa
         const movements = [...pIn, ...pOut].sort((a, b) => (parseSheetDate(a.date).getTime() || 0) - (parseSheetDate(b.date).getTime() || 0));
         if (movements.length === 0 && pIn.length === 0 && pOut.length === 0) return null;
 
-        const price = parseFloat(product.price) || 0;
+        const price = roundPrice(parseFloat(product.price));
         const unitName = getProductUnit(product.id);
         const categoryName = getCategoryName(product.category_id);
 

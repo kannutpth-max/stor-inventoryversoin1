@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
-import { cn, formatThaiBuddhistDate, parseSheetDate } from "@/lib/utils";
+import { cn, formatThaiBuddhistDate, parseSheetDate, roundPrice, clampPriceInput, formatMoney } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useSheetData, useSheetCreate, useSheetUpdate, useSheetDelete } from "@/hooks/useGoogleSheets";
 
@@ -91,7 +91,7 @@ export default function StockIn() {
         productName: product?.name || r.product_id,
         unit: product ? getUnitName(product.unit_id) : "",
         quantity: qty,
-        price: parseFloat(product?.price || "0") || 0,
+        price: roundPrice(product?.price),
         recordId: r.id,
         originalQty: qty,
       };
@@ -110,7 +110,7 @@ export default function StockIn() {
 
     setItems([...items, {
       id: `item-${Date.now()}`, productId: product.id, productName: product.name,
-      unit: getUnitName(product.unit_id), quantity: parseInt(quantity), price: parseFloat(price) || 0,
+      unit: getUnitName(product.unit_id), quantity: parseInt(quantity), price: roundPrice(price),
     }]);
     setSelectedProduct(""); setQuantity(""); setPrice("");
   };
@@ -344,7 +344,7 @@ export default function StockIn() {
                 </Popover>
               </div>
               <Input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="จำนวน" />
-              <Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="ราคา/หน่วย" />
+              <Input type="number" step="0.01" value={price} onChange={(e) => setPrice(clampPriceInput(e.target.value))} placeholder="ราคา/หน่วย" />
               <Button onClick={handleAddItem} className="w-full"><Plus className="mr-2 h-4 w-4" />เพิ่ม</Button>
             </div>
           </div>
@@ -379,8 +379,8 @@ export default function StockIn() {
                         />
                       ) : item.quantity.toLocaleString()}
                     </TableCell>
-                    <TableCell className="text-right">{item.price.toLocaleString()}</TableCell>
-                    <TableCell className="text-right font-medium">{(item.quantity * item.price).toLocaleString()}</TableCell>
+                    <TableCell className="text-right">{formatMoney(item.price)}</TableCell>
+                    <TableCell className="text-right font-medium">{formatMoney(item.quantity * item.price)}</TableCell>
                     <TableCell className="text-center">
                       <Button variant="ghost" size="icon" onClick={() => handleRemoveItemFull(item.id)} className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
                     </TableCell>
@@ -391,7 +391,7 @@ export default function StockIn() {
           </div>
 
           <div className="flex items-center justify-between">
-            <div className="text-lg font-semibold">ยอดรวมทั้งสิ้น: <span className="text-primary">{totalAmount.toLocaleString()} บาท</span></div>
+            <div className="text-lg font-semibold">ยอดรวมทั้งสิ้น: <span className="text-primary">{formatMoney(totalAmount)} บาท</span></div>
             <Button onClick={handleSave} size="lg" disabled={saving}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               <PackagePlus className="mr-2 h-4 w-4" />

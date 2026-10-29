@@ -32,3 +32,23 @@ export function formatThaiBuddhistDate(
   return new Intl.DateTimeFormat("th-TH-u-ca-buddhist-nu-latn", options).format(date);
 }
 
+/** Round a price to at most 2 decimal places. */
+export function roundPrice(n: number | string | null | undefined): number {
+  const v = typeof n === "number" ? n : parseFloat(String(n ?? ""));
+  if (!Number.isFinite(v)) return 0;
+  return Math.round(v * 100) / 100;
+}
+
+/** Limit a price input string to at most 2 decimal places while typing. */
+export function clampPriceInput(v: string): string {
+  const cleaned = v.replace(/[^\d.]/g, "");
+  const dot = cleaned.indexOf(".");
+  if (dot === -1) return cleaned;
+  return cleaned.slice(0, dot + 3);
+}
+
+/** Format a money amount with at most 2 decimal places. */
+export function formatMoney(n: number): string {
+  return (Number.isFinite(n) ? n : 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+

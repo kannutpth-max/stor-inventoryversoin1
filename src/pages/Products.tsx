@@ -64,7 +64,9 @@ export default function Products() {
   const getUnitName = (id: string) => units.find(u => u.id === id)?.name || id;
 
   const filteredProducts = products.filter(
-    (p) => p.name.toLowerCase().includes(search.toLowerCase()) || p.id.toLowerCase().includes(search.toLowerCase())
+    (p) =>
+      (categoryFilter === "all" || p.category_id === categoryFilter) &&
+      (p.name.toLowerCase().includes(search.toLowerCase()) || p.id.toLowerCase().includes(search.toLowerCase()))
   );
 
   const handleOpenDialog = (product?: Product) => {

@@ -449,6 +449,7 @@ serve(async (req) => {
         const headers = await ensureHeaders(accessToken, googleSheetId, sheet, dataKeys);
         const values = headers.map((h) => sanitizeCellValue(data![h] ?? ""));
         result = await appendRow(accessToken, googleSheetId, sheet, values);
+        cacheInvalidate(sheet);
         break;
       }
       case "update": {
@@ -464,6 +465,7 @@ serve(async (req) => {
         const existing = allRows[rowIndex];
         const values = headers.map((h) => sanitizeCellValue(data![h] ?? existing[h] ?? ""));
         result = await updateRow(accessToken, googleSheetId, sheet, rowIndex, values);
+        cacheInvalidate(sheet);
         break;
       }
       case "delete": {
@@ -476,6 +478,7 @@ serve(async (req) => {
           });
         }
         result = await deleteRow(accessToken, googleSheetId, sheet, idx);
+        cacheInvalidate(sheet);
         break;
       }
     }

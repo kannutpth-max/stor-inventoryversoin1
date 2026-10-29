@@ -1,7 +1,7 @@
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { parseSheetDate } from "@/lib/utils";
+import { parseSheetDate, roundPrice, formatMoney } from "@/lib/utils";
 
 const TH_MONTHS_SHORT = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
 const TH_MONTHS_LONG = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
@@ -130,7 +130,7 @@ function buildStockCardProductData(params: StockCardExportParams) {
       ...pOut.map((r: any) => ({ ...r, type: "out" })),
     ].sort((a, b) => (parseSheetDate(a.date).getTime() || 0) - (parseSheetDate(b.date).getTime() || 0));
 
-    const price = parseFloat(product.price) || 0;
+    const price = roundPrice(parseFloat(product.price));
     const unitName = helpers.getProductUnit(product.id);
     const categoryName = helpers.getCategoryName(product.category_id);
 
@@ -265,19 +265,19 @@ export async function exportStockCardToPDF(params: StockCardExportParams): Promi
     // Opening balance row
     tableBody.push([
       "", `ยอดยกมา${pd.openingMonth ? `เดือน${pd.openingMonth}` : ""}`, "",
-      pd.price ? pd.price.toLocaleString() : "", "-", "-",
+      pd.price ? formatMoney(pd.price) : "", "-", "-",
       pd.openingBalance.toLocaleString(),
-      (pd.openingBalance * pd.price).toLocaleString(), ""
+      formatMoney(pd.openingBalance * pd.price), ""
     ]);
     // Movement rows
     pd.rows.forEach(r => {
       tableBody.push([
         r.date, r.party, r.ref,
-        r.price ? r.price.toLocaleString() : "",
+        r.price ? formatMoney(r.price) : "",
         r.inQty !== null ? r.inQty.toLocaleString() : "-",
         r.outQty !== null ? r.outQty.toLocaleString() : "-",
         r.balance.toLocaleString(),
-        r.totalPrice.toLocaleString(), ""
+        formatMoney(r.totalPrice), ""
       ]);
     });
 
@@ -336,7 +336,7 @@ function buildStockBalanceData(params: StockBalanceExportParams) {
     return new Date(s);
   };
   const rows = products.map((p, idx) => {
-    const price = parseFloat(p.price) || 0;
+    const price = roundPrice(parseFloat(p.price));
     const pIn = stockIn.filter(r => r.product_id === p.id);
     const pOut = stockOut.filter(r => r.product_id === p.id);
     const sumQty = (arr: any[], pred: (d: Date) => boolean) =>
@@ -573,7 +573,7 @@ export function buildReportData(
         headers: ["รหัส", "ชื่อวัสดุ", "ประเภท", "หน่วย", "ราคา", "คงเหลือ", "มูลค่า"],
         rows: products.map(p => {
           const stock = parseInt(p.stock) || 0;
-          const price = parseFloat(p.price) || 0;
+          const price = roundPrice(parseFloat(p.price));
           return [p.id, p.name, getCategoryName(p.category_id), getProductUnit(p.id), price, stock, stock * price];
         }),
       };

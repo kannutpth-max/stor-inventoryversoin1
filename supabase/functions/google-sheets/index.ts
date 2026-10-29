@@ -155,15 +155,8 @@ async function ensureHeaders(accessToken: string, sheetId: string, sheetName: st
   return newHeaders;
 }
 
-async function getSheetData(accessToken: string, sheetId: string, sheetName: string) {
-  const res = await fetchWithRetry(
-    `${SHEETS_API}/${sheetId}/values/${encodeURIComponent(sheetName)}`,
-    { headers: { Authorization: `Bearer ${accessToken}` } },
-    `read sheet ${sheetName}`,
-  );
-  const data = await res.json();
-  const rows = data.values || [];
-  if (rows.length === 0) return [];
+function parseSheetRows(rows: string[][]): Record<string, string>[] {
+  if (!rows || rows.length === 0) return [];
   const headers = rows[0];
   return rows.slice(1).map((row: string[]) => {
     const obj: Record<string, string> = {};
@@ -172,6 +165,48 @@ async function getSheetData(accessToken: string, sheetId: string, sheetName: str
     });
     return obj;
   });
+}
+
+async function getSheetData(accessToken: string, sheetId: string, sheetName: string) {
+  const res = await fetchWithRetry(
+    `${SHEETS_API}/${sheetId}/values/${encodeURIComponent(sheetName)}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+    `read sheet ${sheetName}`,
+  );
+  const data = await res.json();
+  return parseSheetRows(data.values || []);
+}
+
+// Reads several sheets with a single Google API request (values:batchGet),
+// which keeps us well inside Google's per-minute read quota.
+function sheetNameFromRange(range: string): string {
+  const m = range.match(/^'([^']+)'!/) || range.match(/^([^'!]+)!/);
+  return m ? m[1] : "";
+}
+
+async function batchGetSheetData(accessToken: string, sheetId: string, sheetNames: string[]) {
+  const ranges = sheetNames.map((s) => `${s}!A1:Z100000`);
+  const url = `${SHEETS_API}/${sheetId}/values:batchGet?${ranges.map((r) => `ranges=${r}`).join("&")}`;
+  const res = await fetchWithRetry(
+    url,
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+    `batch read sheets ${sheetNames.join(",")}`,
+  );
+  const data = await res.json();
+  const valueRanges: { range?: string; values?: string[][] }[] = data.valueRanges || [];
+
+  const result: Record<string, Record<string, string>[]> = {};
+  // Match by the sheet name parsed from each returned range (order-preserving fallback below).
+  const byName = new Map<string, { range?: string; values?: string[][] }>();
+  valueRanges.forEach((vr, i) => {
+    const name = sheetNameFromRange(vr.range || "") || sheetNames[i];
+    byName.set(name, vr);
+  });
+  sheetNames.forEach((name) => {
+    const vr = byName.get(name) ?? valueRanges[sheetNames.indexOf(name)];
+    result[name] = parseSheetRows(vr?.values || []);
+  });
+  return result;
 }
 
 async function appendRow(accessToken: string, sheetId: string, sheetName: string, values: string[]) {

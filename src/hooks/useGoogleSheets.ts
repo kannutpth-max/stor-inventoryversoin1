@@ -29,6 +29,15 @@ export function useSheetData<T = Record<string, string>>(sheet: SheetName) {
   });
 }
 
+async function callSheetFunction(body: Record<string, unknown>) {
+  const { data, error } = await supabase.functions.invoke("google-sheets", {
+    body,
+  });
+  if (error) throw new Error(error.message);
+  if (!data.success) throw new Error(data.error || "Unknown error");
+  return data.data;
+}
+
 function useInvalidateSheets() {
   const queryClient = useQueryClient();
   return () => queryClient.invalidateQueries({ queryKey: ["sheets"] });

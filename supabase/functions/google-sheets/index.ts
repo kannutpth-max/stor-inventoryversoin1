@@ -15,7 +15,14 @@ function toBase64Url(str: string): string {
   return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
+// Cache the access token across invocations (valid ~1 hour) to avoid
+// re-minting a JWT + token endpoint call on every single request.
+const TOKEN_CACHE = globalThis as unknown as { __gsAccessToken?: { token: string; exp: number } };
+
 async function getAccessToken(credentials: ServiceAccountCredentials): Promise<string> {
+  const cached = TOKEN_CACHE.__gsAccessToken;
+  if (cached && cached.exp > Date.now() + 60_000) return cached.token;
+
   const now = Math.floor(Date.now() / 1000);
   const header = toBase64Url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
   const claim = toBase64Url(JSON.stringify({
@@ -64,11 +71,15 @@ async function getAccessToken(credentials: ServiceAccountCredentials): Promise<s
     console.error("Token error:", tokenData);
     throw new Error("Failed to authenticate with Google API");
   }
+  TOKEN_CACHE.__gsAccessToken = {
+    token: tokenData.access_token,
+    exp: Date.now() + (Number(tokenData.expires_in) || 3600) * 1000,
+  };
   return tokenData.access_token;
 }
 
 const ALLOWED_SHEETS = ["products", "categories", "units", "companies", "departments", "stock_in", "stock_out"];
-const ALLOWED_ACTIONS = ["read", "create", "update", "delete"];
+const ALLOWED_ACTIONS = ["read", "readAll", "create", "update", "delete"];
 const MAX_CELL_LENGTH = 5000;
 
 function sanitizeCellValue(value: unknown): string {
@@ -82,7 +93,7 @@ function sanitizeCellValue(value: unknown): string {
 
 const SHEETS_API = "https://sheets.googleapis.com/v4/spreadsheets";
 
-async function fetchWithRetry(url: string, init: RequestInit, label: string, maxAttempts = 4): Promise<Response> {
+async function fetchWithRetry(url: string, init: RequestInit, label: string, maxAttempts = 3): Promise<Response> {
   let lastErr = "";
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const res = await fetch(url, init);
@@ -90,17 +101,22 @@ async function fetchWithRetry(url: string, init: RequestInit, label: string, max
     // Retry on transient errors
     if ([429, 500, 502, 503, 504].includes(res.status) && attempt < maxAttempts) {
       lastErr = await res.text();
-      const delay = Math.min(2000, 300 * Math.pow(2, attempt - 1));
+      // Honor Google's Retry-After when present; otherwise back off exponentially.
+      const retryAfter = Number(res.headers.get("retry-after"));
+      const delay =
+        Number.isFinite(retryAfter) && retryAfter > 0
+          ? Math.min(8000, retryAfter * 1000)
+          : Math.min(4000, 500 * Math.pow(2, attempt - 1));
       console.log(`Retrying ${label} (attempt ${attempt}, status ${res.status}) after ${delay}ms`);
       await new Promise((r) => setTimeout(r, delay));
       continue;
     }
     const err = await res.text();
     console.error(`Failed to ${label}:`, err);
-    throw new Error(`Failed to ${label}`);
+    throw new Error(res.status === 429 ? `Google Sheets rate limit reached for ${label}; please retry in a moment` : `Failed to ${label}`);
   }
   console.error(`Failed to ${label} after ${maxAttempts} attempts:`, lastErr);
-  throw new Error(`Failed to ${label}`);
+  throw new Error(`Google Sheets is busy (rate limited) for ${label}; please retry in a moment`);
 }
 
 async function getSheetHeaders(accessToken: string, sheetId: string, sheetName: string): Promise<string[]> {
@@ -139,15 +155,8 @@ async function ensureHeaders(accessToken: string, sheetId: string, sheetName: st
   return newHeaders;
 }
 
-async function getSheetData(accessToken: string, sheetId: string, sheetName: string) {
-  const res = await fetchWithRetry(
-    `${SHEETS_API}/${sheetId}/values/${encodeURIComponent(sheetName)}`,
-    { headers: { Authorization: `Bearer ${accessToken}` } },
-    `read sheet ${sheetName}`,
-  );
-  const data = await res.json();
-  const rows = data.values || [];
-  if (rows.length === 0) return [];
+function parseSheetRows(rows: string[][]): Record<string, string>[] {
+  if (!rows || rows.length === 0) return [];
   const headers = rows[0];
   return rows.slice(1).map((row: string[]) => {
     const obj: Record<string, string> = {};
@@ -156,6 +165,48 @@ async function getSheetData(accessToken: string, sheetId: string, sheetName: str
     });
     return obj;
   });
+}
+
+async function getSheetData(accessToken: string, sheetId: string, sheetName: string) {
+  const res = await fetchWithRetry(
+    `${SHEETS_API}/${sheetId}/values/${encodeURIComponent(sheetName)}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+    `read sheet ${sheetName}`,
+  );
+  const data = await res.json();
+  return parseSheetRows(data.values || []);
+}
+
+// Reads several sheets with a single Google API request (values:batchGet),
+// which keeps us well inside Google's per-minute read quota.
+function sheetNameFromRange(range: string): string {
+  const m = range.match(/^'([^']+)'!/) || range.match(/^([^'!]+)!/);
+  return m ? m[1] : "";
+}
+
+async function batchGetSheetData(accessToken: string, sheetId: string, sheetNames: string[]) {
+  const ranges = sheetNames.map((s) => `${s}!A1:Z100000`);
+  const url = `${SHEETS_API}/${sheetId}/values:batchGet?${ranges.map((r) => `ranges=${r}`).join("&")}`;
+  const res = await fetchWithRetry(
+    url,
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+    `batch read sheets ${sheetNames.join(",")}`,
+  );
+  const data = await res.json();
+  const valueRanges: { range?: string; values?: string[][] }[] = data.valueRanges || [];
+
+  const result: Record<string, Record<string, string>[]> = {};
+  // Match by the sheet name parsed from each returned range (order-preserving fallback below).
+  const byName = new Map<string, { range?: string; values?: string[][] }>();
+  valueRanges.forEach((vr, i) => {
+    const name = sheetNameFromRange(vr.range || "") || sheetNames[i];
+    byName.set(name, vr);
+  });
+  sheetNames.forEach((name) => {
+    const vr = byName.get(name) ?? valueRanges[sheetNames.indexOf(name)];
+    result[name] = parseSheetRows(vr?.values || []);
+  });
+  return result;
 }
 
 async function appendRow(accessToken: string, sheetId: string, sheetName: string, values: string[]) {
@@ -286,7 +337,7 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const { action, sheet, data, id } = body as { action?: string; sheet?: string; data?: Record<string, unknown>; id?: string };
+    const { action, sheet, data, id, sheets } = body as { action?: string; sheet?: string; data?: Record<string, unknown>; id?: string; sheets?: unknown };
 
     // Validate action and sheet
     if (!action || !ALLOWED_ACTIONS.includes(action)) {
@@ -295,7 +346,7 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (!sheet || !ALLOWED_SHEETS.includes(sheet)) {
+    if (action !== "readAll" && (!sheet || !ALLOWED_SHEETS.includes(sheet))) {
       return new Response(JSON.stringify({ success: false, error: "Invalid sheet" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -318,6 +369,19 @@ serve(async (req) => {
     switch (action) {
       case "read": {
         result = await getSheetData(accessToken, googleSheetId, sheet);
+        break;
+      }
+      case "readAll": {
+        const requested = Array.isArray(sheets)
+          ? [...new Set(sheets.filter((s): s is string => typeof s === "string" && ALLOWED_SHEETS.includes(s)))]
+          : [];
+        if (requested.length === 0) {
+          return new Response(JSON.stringify({ success: false, error: "Invalid sheets" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        result = await batchGetSheetData(accessToken, googleSheetId, requested.slice(0, 10));
         break;
       }
       case "create": {
@@ -361,7 +425,8 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error("Error:", error);
-    return new Response(JSON.stringify({ success: false, error: "Operation failed" }), {
+    const message = error instanceof Error ? error.message : "Operation failed";
+    return new Response(JSON.stringify({ success: false, error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

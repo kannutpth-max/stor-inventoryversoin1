@@ -45,6 +45,23 @@ function cacheInvalidate(sheet?: string) {
   else cache.clear();
 }
 
+// True when the sheet has a cached copy but older than the fresh TTL.
+function cacheIsStale(sheet: string): boolean {
+  const cache = SHEET_CACHE.__gsSheetCache;
+  const entry = cache?.get(sheet);
+  return !!entry && Date.now() - entry.ts > CACHE_TTL_MS;
+}
+
+// Refresh cached sheets in the background without blocking the response
+// (stale-while-revalidate). Failures are ignored — the next request retries.
+function backgroundRevalidate(accessToken: string, sheetId: string, sheetNames: string[]) {
+  batchGetSheetData(accessToken, sheetId, sheetNames)
+    .then((data) => {
+      Object.entries(data).forEach(([name, rows]) => cacheSet(name, rows));
+    })
+    .catch((e) => console.warn(`Background refresh failed for ${sheetNames.join(",")}:`, e));
+}
+
 async function getAccessToken(credentials: ServiceAccountCredentials): Promise<string> {
   const cached = TOKEN_CACHE.__gsAccessToken;
   if (cached && cached.exp > Date.now() + 60_000) return cached.token;
@@ -394,9 +411,18 @@ serve(async (req) => {
     let result;
     switch (action) {
       case "read": {
-        const cachedRows = cacheGet(sheet);
-        if (cachedRows) {
-          result = cachedRows;
+        const freshRows = cacheGet(sheet);
+        if (freshRows) {
+          result = freshRows;
+          break;
+        }
+        // Serve any cached copy immediately and refresh in the background —
+        // keeps repeated page loads inside Google's read quota instead of
+        // failing with a rate-limit error.
+        const staleRows = cacheGet(sheet, Infinity);
+        if (staleRows) {
+          result = staleRows;
+          backgroundRevalidate(accessToken, googleSheetId, [sheet]);
           break;
         }
         try {
@@ -405,9 +431,9 @@ serve(async (req) => {
         } catch (e) {
           // When Google is rate limiting, serve slightly stale cached data
           // rather than failing the page.
-          const stale = cacheGet(sheet, Infinity);
-          if (stale) {
-            result = stale;
+          const staleFallback = cacheGet(sheet, Infinity);
+          if (staleFallback) {
+            result = staleFallback;
             break;
           }
           throw e;

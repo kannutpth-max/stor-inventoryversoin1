@@ -15,7 +15,14 @@ function toBase64Url(str: string): string {
   return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
+// Cache the access token across invocations (valid ~1 hour) to avoid
+// re-minting a JWT + token endpoint call on every single request.
+const TOKEN_CACHE = globalThis as unknown as { __gsAccessToken?: { token: string; exp: number } };
+
 async function getAccessToken(credentials: ServiceAccountCredentials): Promise<string> {
+  const cached = TOKEN_CACHE.__gsAccessToken;
+  if (cached && cached.exp > Date.now() + 60_000) return cached.token;
+
   const now = Math.floor(Date.now() / 1000);
   const header = toBase64Url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
   const claim = toBase64Url(JSON.stringify({
@@ -64,6 +71,10 @@ async function getAccessToken(credentials: ServiceAccountCredentials): Promise<s
     console.error("Token error:", tokenData);
     throw new Error("Failed to authenticate with Google API");
   }
+  TOKEN_CACHE.__gsAccessToken = {
+    token: tokenData.access_token,
+    exp: Date.now() + (Number(tokenData.expires_in) || 3600) * 1000,
+  };
   return tokenData.access_token;
 }
 
@@ -82,7 +93,7 @@ function sanitizeCellValue(value: unknown): string {
 
 const SHEETS_API = "https://sheets.googleapis.com/v4/spreadsheets";
 
-async function fetchWithRetry(url: string, init: RequestInit, label: string, maxAttempts = 4): Promise<Response> {
+async function fetchWithRetry(url: string, init: RequestInit, label: string, maxAttempts = 3): Promise<Response> {
   let lastErr = "";
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const res = await fetch(url, init);
@@ -90,17 +101,22 @@ async function fetchWithRetry(url: string, init: RequestInit, label: string, max
     // Retry on transient errors
     if ([429, 500, 502, 503, 504].includes(res.status) && attempt < maxAttempts) {
       lastErr = await res.text();
-      const delay = Math.min(2000, 300 * Math.pow(2, attempt - 1));
+      // Honor Google's Retry-After when present; otherwise back off exponentially.
+      const retryAfter = Number(res.headers.get("retry-after"));
+      const delay =
+        Number.isFinite(retryAfter) && retryAfter > 0
+          ? Math.min(8000, retryAfter * 1000)
+          : Math.min(4000, 500 * Math.pow(2, attempt - 1));
       console.log(`Retrying ${label} (attempt ${attempt}, status ${res.status}) after ${delay}ms`);
       await new Promise((r) => setTimeout(r, delay));
       continue;
     }
     const err = await res.text();
     console.error(`Failed to ${label}:`, err);
-    throw new Error(`Failed to ${label}`);
+    throw new Error(res.status === 429 ? `Google Sheets rate limit reached for ${label}; please retry in a moment` : `Failed to ${label}`);
   }
   console.error(`Failed to ${label} after ${maxAttempts} attempts:`, lastErr);
-  throw new Error(`Failed to ${label}`);
+  throw new Error(`Google Sheets is busy (rate limited) for ${label}; please retry in a moment`);
 }
 
 async function getSheetHeaders(accessToken: string, sheetId: string, sheetName: string): Promise<string[]> {

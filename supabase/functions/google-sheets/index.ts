@@ -394,7 +394,24 @@ serve(async (req) => {
     let result;
     switch (action) {
       case "read": {
-        result = await getSheetData(accessToken, googleSheetId, sheet);
+        const cachedRows = cacheGet(sheet);
+        if (cachedRows) {
+          result = cachedRows;
+          break;
+        }
+        try {
+          result = await getSheetData(accessToken, googleSheetId, sheet);
+          cacheSet(sheet, result);
+        } catch (e) {
+          // When Google is rate limiting, serve slightly stale cached data
+          // rather than failing the page.
+          const stale = cacheGet(sheet, Infinity);
+          if (stale) {
+            result = stale;
+            break;
+          }
+          throw e;
+        }
         break;
       }
       case "readAll": {
@@ -407,7 +424,24 @@ serve(async (req) => {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
-        result = await batchGetSheetData(accessToken, googleSheetId, requested.slice(0, 10));
+        const cachedAll = requested.map((n) => cacheGet(n));
+        if (cachedAll.every((c) => c !== null)) {
+          result = Object.fromEntries(requested.map((n, i) => [n, cachedAll[i]!]));
+          break;
+        }
+        try {
+          result = await batchGetSheetData(accessToken, googleSheetId, requested.slice(0, 10));
+          Object.entries(result).forEach(([name, rows]) => cacheSet(name, rows));
+        } catch (e) {
+          const staleEntries = requested
+            .map((n) => [n, cacheGet(n, Infinity)] as const)
+            .filter(([, rows]) => rows !== null);
+          if (staleEntries.length === requested.length) {
+            result = Object.fromEntries(staleEntries);
+            break;
+          }
+          throw e;
+        }
         break;
       }
       case "create": {

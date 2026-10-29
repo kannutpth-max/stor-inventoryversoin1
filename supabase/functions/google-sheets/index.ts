@@ -19,6 +19,32 @@ function toBase64Url(str: string): string {
 // re-minting a JWT + token endpoint call on every single request.
 const TOKEN_CACHE = globalThis as unknown as { __gsAccessToken?: { token: string; exp: number } };
 
+// Short-lived cache of sheet reads. Google allows only 60 reads/minute, and
+// page loads, retries and concurrent tabs can easily exceed that. Serving
+// repeated reads from this cache (invalidated on every write) keeps us inside
+// the quota; stale data older than TTL is still served as a fallback when
+// Google is rate limiting instead of failing the request.
+const SHEET_CACHE = globalThis as unknown as { __gsSheetCache?: Map<string, { rows: Record<string, string>[]; ts: number }> };
+const CACHE_TTL_MS = 30_000;
+
+function cacheGet(sheet: string, maxAgeMs: number = CACHE_TTL_MS): Record<string, string>[] | null {
+  const cache = (SHEET_CACHE.__gsSheetCache ??= new Map());
+  const entry = cache.get(sheet);
+  if (entry && Date.now() - entry.ts <= maxAgeMs) return entry.rows;
+  return null;
+}
+
+function cacheSet(sheet: string, rows: Record<string, string>[]) {
+  (SHEET_CACHE.__gsSheetCache ??= new Map()).set(sheet, { rows, ts: Date.now() });
+}
+
+function cacheInvalidate(sheet?: string) {
+  const cache = SHEET_CACHE.__gsSheetCache;
+  if (!cache) return;
+  if (sheet) cache.delete(sheet);
+  else cache.clear();
+}
+
 async function getAccessToken(credentials: ServiceAccountCredentials): Promise<string> {
   const cached = TOKEN_CACHE.__gsAccessToken;
   if (cached && cached.exp > Date.now() + 60_000) return cached.token;
@@ -368,7 +394,24 @@ serve(async (req) => {
     let result;
     switch (action) {
       case "read": {
-        result = await getSheetData(accessToken, googleSheetId, sheet);
+        const cachedRows = cacheGet(sheet);
+        if (cachedRows) {
+          result = cachedRows;
+          break;
+        }
+        try {
+          result = await getSheetData(accessToken, googleSheetId, sheet);
+          cacheSet(sheet, result);
+        } catch (e) {
+          // When Google is rate limiting, serve slightly stale cached data
+          // rather than failing the page.
+          const stale = cacheGet(sheet, Infinity);
+          if (stale) {
+            result = stale;
+            break;
+          }
+          throw e;
+        }
         break;
       }
       case "readAll": {
@@ -381,7 +424,24 @@ serve(async (req) => {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
-        result = await batchGetSheetData(accessToken, googleSheetId, requested.slice(0, 10));
+        const cachedAll = requested.map((n) => cacheGet(n));
+        if (cachedAll.every((c) => c !== null)) {
+          result = Object.fromEntries(requested.map((n, i) => [n, cachedAll[i]!]));
+          break;
+        }
+        try {
+          result = await batchGetSheetData(accessToken, googleSheetId, requested.slice(0, 10));
+          Object.entries(result).forEach(([name, rows]) => cacheSet(name, rows));
+        } catch (e) {
+          const staleEntries = requested
+            .map((n) => [n, cacheGet(n, Infinity)] as const)
+            .filter(([, rows]) => rows !== null);
+          if (staleEntries.length === requested.length) {
+            result = Object.fromEntries(staleEntries);
+            break;
+          }
+          throw e;
+        }
         break;
       }
       case "create": {
@@ -389,6 +449,7 @@ serve(async (req) => {
         const headers = await ensureHeaders(accessToken, googleSheetId, sheet, dataKeys);
         const values = headers.map((h) => sanitizeCellValue(data![h] ?? ""));
         result = await appendRow(accessToken, googleSheetId, sheet, values);
+        cacheInvalidate(sheet);
         break;
       }
       case "update": {
@@ -404,6 +465,7 @@ serve(async (req) => {
         const existing = allRows[rowIndex];
         const values = headers.map((h) => sanitizeCellValue(data![h] ?? existing[h] ?? ""));
         result = await updateRow(accessToken, googleSheetId, sheet, rowIndex, values);
+        cacheInvalidate(sheet);
         break;
       }
       case "delete": {
@@ -416,6 +478,7 @@ serve(async (req) => {
           });
         }
         result = await deleteRow(accessToken, googleSheetId, sheet, idx);
+        cacheInvalidate(sheet);
         break;
       }
     }

@@ -367,8 +367,8 @@ function StockBalanceReport({ products, stockIn, stockOut, getProductUnit, dateF
   );
 }
 
-function StockCardReport({ products, stockIn, stockOut, getProductUnit, getCompanyName, getDepartmentName, getCategoryName, dateFrom }: {
-  products: Product[]; stockIn: StockInRecord[]; stockOut: StockOutRecord[];
+function StockCardReport({ products, stockIn, stockOut, allStockIn, allStockOut, getProductUnit, getCompanyName, getDepartmentName, getCategoryName, dateFrom }: {
+  products: Product[]; stockIn: StockInRecord[]; stockOut: StockOutRecord[]; allStockIn: StockInRecord[]; allStockOut: StockOutRecord[];
   getProductUnit: (id: string) => string; getCompanyName: (id: string) => string; getDepartmentName: (id: string) => string;
   getCategoryName: (id: string) => string; dateFrom?: Date;
 }) {
@@ -392,12 +392,15 @@ function StockCardReport({ products, stockIn, stockOut, getProductUnit, getCompa
         const unitName = getProductUnit(product.id);
         const categoryName = getCategoryName(product.category_id);
 
-        // Calculate opening balance (stock before the filtered period)
-        let openingBalance = parseInt(product.stock) || 0;
-        // Subtract all filtered movements to get the starting balance
-        const totalIn = pIn.reduce((s, r) => s + (parseInt(r.quantity) || 0), 0);
-        const totalOut = pOut.reduce((s, r) => s + (parseInt(r.quantity) || 0), 0);
-        openingBalance = openingBalance - totalIn + totalOut;
+        // Opening balance = balance carried over from before the filtered period,
+        // computed from the full transaction history (not the `stock` column).
+        const sumBefore = (arr: typeof allStockIn) => arr.reduce((s, r) => {
+          if (r.product_id !== product.id) return s;
+          const d = parseSheetDate(r.date);
+          if (Number.isNaN(d.getTime())) return s;
+          return dateFrom && d < dateFrom ? s + (parseInt(r.quantity) || 0) : s;
+        }, 0);
+        const openingBalance = dateFrom ? sumBefore(allStockIn) - sumBefore(allStockOut) : 0;
 
         let balance = openingBalance;
         const rows = movements.map(m => {

@@ -21,6 +21,8 @@ export interface StockCardExportParams {
   products: any[];
   stockIn: any[];
   stockOut: any[];
+  allStockIn?: any[];
+  allStockOut?: any[];
   helpers: {
     getProductName: (id: string) => string;
     getProductUnit: (id: string) => string;
@@ -120,7 +122,7 @@ export async function exportToPDF(data: ExportData): Promise<boolean> {
 // ======================== Stock Card Specific Exports ========================
 
 function buildStockCardProductData(params: StockCardExportParams) {
-  const { products, stockIn, stockOut, helpers, dateFrom } = params;
+  const { products, stockIn, stockOut, helpers, dateFrom, allStockIn, allStockOut } = params;
 
   return products.map((product, pIdx) => {
     const pIn = stockIn.filter((r: any) => r.product_id === product.id);
@@ -134,10 +136,17 @@ function buildStockCardProductData(params: StockCardExportParams) {
     const unitName = helpers.getProductUnit(product.id);
     const categoryName = helpers.getCategoryName(product.category_id);
 
-    let openingBalance = parseInt(product.stock) || 0;
-    const totalIn = pIn.reduce((s: number, r: any) => s + (parseInt(r.quantity) || 0), 0);
-    const totalOut = pOut.reduce((s: number, r: any) => s + (parseInt(r.quantity) || 0), 0);
-    openingBalance = openingBalance - totalIn + totalOut;
+    // Opening balance = balance carried over from before the filtered period,
+    // computed from the full transaction history (not the `stock` column).
+    const sumBefore = (arr: any[]) => arr.reduce((s: number, r: any) => {
+      if (r.product_id !== product.id) return s;
+      const d = parseSheetDate(r.date);
+      if (Number.isNaN(d.getTime())) return s;
+      return dateFrom && d < dateFrom ? s + (parseInt(r.quantity) || 0) : s;
+    }, 0);
+    const openingBalance = dateFrom
+      ? sumBefore(allStockIn || []) - sumBefore(allStockOut || [])
+      : 0;
 
     const openingMonth = dateFrom ? `${TH_MONTHS_LONG[dateFrom.getMonth()]} ${dateFrom.getFullYear() + 543}` : "";
 

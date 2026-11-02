@@ -115,6 +115,8 @@ export default function Reports() {
           products: filtered.products,
           stockIn: filtered.stockIn,
           stockOut: filtered.stockOut,
+          allStockIn: stockIn as any[],
+          allStockOut: stockOut as any[],
           helpers: helperFns,
           dateFrom,
         };

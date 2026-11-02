@@ -354,12 +354,11 @@ function buildStockBalanceData(params: StockBalanceExportParams) {
         if (Number.isNaN(d.getTime())) return s;
         return pred(d) ? s + (parseInt(r.quantity) || 0) : s;
       }, 0);
-    const inFromStart = sumQty(pIn, d => d >= periodStart);
-    const outFromStart = sumQty(pOut, d => d >= periodStart);
     const inPeriod = sumQty(pIn, d => d >= periodStart && d <= periodEnd);
     const outPeriod = sumQty(pOut, d => d >= periodStart && d <= periodEnd);
-    const currentStock = parseInt(p.stock) || 0;
-    const opening = currentStock - inFromStart + outFromStart;
+    // Opening = balance carried over from before the period, computed from the
+    // full transaction history (not the product `stock` column, which can be stale).
+    const opening = sumQty(pIn, d => d < periodStart) - sumQty(pOut, d => d < periodStart);
     const closing = opening + inPeriod - outPeriod;
     return {
       seq: idx + 1, id: p.id, name: p.name, unit: helpers.getProductUnit(p.id),

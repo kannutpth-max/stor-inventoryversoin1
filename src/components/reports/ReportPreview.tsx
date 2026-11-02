@@ -93,7 +93,7 @@ export default function ReportPreview({ reportType, dateFrom, dateTo, productFro
     case "stock-balance":
       return <StockBalanceReport products={filteredProducts} stockIn={stockIn.filter(r => filterByProduct(r.product_id))} stockOut={stockOut.filter(r => filterByProduct(r.product_id))} getProductUnit={getProductUnit} dateFrom={dateFrom} dateTo={dateTo} />;
     case "stock-card":
-      return <StockCardReport products={filteredProducts} stockIn={filteredStockIn} stockOut={filteredStockOut} getProductUnit={getProductUnit} getCompanyName={getCompanyName} getDepartmentName={getDepartmentName} getCategoryName={getCategoryName} dateFrom={dateFrom} />;
+      return <StockCardReport products={filteredProducts} stockIn={filteredStockIn} stockOut={filteredStockOut} allStockIn={stockIn} allStockOut={stockOut} getProductUnit={getProductUnit} getCompanyName={getCompanyName} getDepartmentName={getDepartmentName} getCategoryName={getCategoryName} dateFrom={dateFrom} />;
     case "product-movement":
       return <DailyMonthlyReport stockIn={filteredStockIn} stockOut={filteredStockOut} getProductName={getProductName} getProductUnit={getProductUnit} getCompanyName={getCompanyName} getDepartmentName={getDepartmentName} />;
     case "by-company":
@@ -210,13 +210,11 @@ export function computeStockBalanceRows(
         if (Number.isNaN(d.getTime())) return s;
         return pred(d) ? s + (parseInt(r.quantity) || 0) : s;
       }, 0);
-    const inFromStart = sumQty(pIn, d => d >= periodStart);
-    const outFromStart = sumQty(pOut, d => d >= periodStart);
     const inPeriod = sumQty(pIn, d => d >= periodStart && d <= periodEnd);
     const outPeriod = sumQty(pOut, d => d >= periodStart && d <= periodEnd);
-    const currentStock = parseInt(p.stock) || 0;
-    // Opening = stock at start of period = current - all txs from start onwards
-    const opening = currentStock - inFromStart + outFromStart;
+    // Opening = balance carried over from before the period, computed from the full
+    // transaction history (not the product `stock` column, which can be stale).
+    const opening = sumQty(pIn, d => d < periodStart) - sumQty(pOut, d => d < periodStart);
     const closing = opening + inPeriod - outPeriod;
     return {
       seq: idx + 1,
@@ -369,8 +367,8 @@ function StockBalanceReport({ products, stockIn, stockOut, getProductUnit, dateF
   );
 }
 
-function StockCardReport({ products, stockIn, stockOut, getProductUnit, getCompanyName, getDepartmentName, getCategoryName, dateFrom }: {
-  products: Product[]; stockIn: StockInRecord[]; stockOut: StockOutRecord[];
+function StockCardReport({ products, stockIn, stockOut, allStockIn, allStockOut, getProductUnit, getCompanyName, getDepartmentName, getCategoryName, dateFrom }: {
+  products: Product[]; stockIn: StockInRecord[]; stockOut: StockOutRecord[]; allStockIn: StockInRecord[]; allStockOut: StockOutRecord[];
   getProductUnit: (id: string) => string; getCompanyName: (id: string) => string; getDepartmentName: (id: string) => string;
   getCategoryName: (id: string) => string; dateFrom?: Date;
 }) {
@@ -394,12 +392,15 @@ function StockCardReport({ products, stockIn, stockOut, getProductUnit, getCompa
         const unitName = getProductUnit(product.id);
         const categoryName = getCategoryName(product.category_id);
 
-        // Calculate opening balance (stock before the filtered period)
-        let openingBalance = parseInt(product.stock) || 0;
-        // Subtract all filtered movements to get the starting balance
-        const totalIn = pIn.reduce((s, r) => s + (parseInt(r.quantity) || 0), 0);
-        const totalOut = pOut.reduce((s, r) => s + (parseInt(r.quantity) || 0), 0);
-        openingBalance = openingBalance - totalIn + totalOut;
+        // Opening balance = balance carried over from before the filtered period,
+        // computed from the full transaction history (not the `stock` column).
+        const sumBefore = (arr: typeof allStockIn) => arr.reduce((s, r) => {
+          if (r.product_id !== product.id) return s;
+          const d = parseSheetDate(r.date);
+          if (Number.isNaN(d.getTime())) return s;
+          return dateFrom && d < dateFrom ? s + (parseInt(r.quantity) || 0) : s;
+        }, 0);
+        const openingBalance = dateFrom ? sumBefore(allStockIn) - sumBefore(allStockOut) : 0;
 
         let balance = openingBalance;
         const rows = movements.map(m => {

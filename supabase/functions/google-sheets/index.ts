@@ -602,7 +602,7 @@ serve(async (req) => {
         const values = headers.map((h) => sanitizeCellValue(data![h] ?? ""));
         result = await appendRow(accessToken, googleSheetId, sheet, values);
         cacheInvalidate(sheet);
-        void dbCacheInvalidate(sheet);
+        await dbCacheInvalidate(sheet);
         break;
       }
       case "update": {
@@ -619,6 +619,7 @@ serve(async (req) => {
         const values = headers.map((h) => sanitizeCellValue(data![h] ?? existing[h] ?? ""));
         result = await updateRow(accessToken, googleSheetId, sheet, rowIndex, values);
         cacheInvalidate(sheet);
+        await dbCacheInvalidate(sheet);
         break;
       }
       case "delete": {
@@ -633,6 +634,7 @@ serve(async (req) => {
         }
         result = await deleteRow(accessToken, googleSheetId, sheet, idx);
         cacheInvalidate(sheet);
+        await dbCacheInvalidate(sheet);
         break;
       }
     }

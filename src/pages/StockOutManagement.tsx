@@ -34,6 +34,7 @@ export default function StockOutManagement() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [deleteReqNo, setDeleteReqNo] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
 
   const getDepartmentName = (id: string) => departments.find(d => d.id === id)?.name || id;
@@ -76,8 +77,9 @@ export default function StockOutManagement() {
   };
 
   const handleDeleteRequisition = async () => {
-    if (!deleteReqNo) return;
+    if (!deleteReqNo || isDeleting) return;
     const records = stockOuts.filter(r => r.requisition_no === deleteReqNo);
+    setIsDeleting(true);
     try {
       for (const record of records) {
         if (record.status === "dispensed") {
@@ -97,6 +99,8 @@ export default function StockOutManagement() {
       setDeleteReqNo(null);
     } catch (e: any) {
       toast({ variant: "destructive", title: "เกิดข้อผิดพลาด", description: e.message });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -219,8 +223,19 @@ export default function StockOutManagement() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteRequisition} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              ลบใบเบิก
+            <AlertDialogAction
+              onClick={handleDeleteRequisition}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  กำลังลบ...
+                </>
+              ) : (
+                "ลบใบเบิก"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

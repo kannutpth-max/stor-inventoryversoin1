@@ -602,6 +602,7 @@ serve(async (req) => {
         const values = headers.map((h) => sanitizeCellValue(data![h] ?? ""));
         result = await appendRow(accessToken, googleSheetId, sheet, values);
         cacheInvalidate(sheet);
+        void dbCacheInvalidate(sheet);
         break;
       }
       case "update": {

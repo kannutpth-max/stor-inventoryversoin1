@@ -34,7 +34,7 @@ function cacheGet(sheet: string, maxAgeMs: number = CACHE_TTL_MS): Record<string
   return null;
 }
 
-function cacheSet(sheet: string, rows: Record<string, string>[]) {
+function cacheSetMemory(sheet: string, rows: Record<string, string>[]) {
   (SHEET_CACHE.__gsSheetCache ??= new Map()).set(sheet, { rows, ts: Date.now() });
 }
 
@@ -45,19 +45,111 @@ function cacheInvalidate(sheet?: string) {
   else cache.clear();
 }
 
-// True when the sheet has a cached copy but older than the fresh TTL.
-function cacheIsStale(sheet: string): boolean {
-  const cache = SHEET_CACHE.__gsSheetCache;
-  const entry = cache?.get(sheet);
-  return !!entry && Date.now() - entry.ts > CACHE_TTL_MS;
+// ============ Persistent cache (survives instance restarts) ============
+// The in-memory cache is wiped every time the function spins up a new
+// instance, which happens frequently — without a persistent copy every page
+// load goes straight to Google and exhausts its 60 reads/minute quota.
+// Cached sheet data is therefore mirrored in the sheets_cache table and read
+// back with the service role key whenever memory is empty.
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+
+function dbCacheEnabled(): boolean {
+  return !!(SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY);
+}
+
+function dbCacheHeaders(): Record<string, string> {
+  return {
+    apikey: SUPABASE_SERVICE_ROLE_KEY,
+    Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+    "Content-Type": "application/json",
+  };
+}
+
+async function dbCacheGet(sheetNames: string[]): Promise<Map<string, { rows: Record<string, string>[]; fetchedAt: number }>> {
+  const out = new Map<string, { rows: Record<string, string>[]; fetchedAt: number }>();
+  if (!dbCacheEnabled() || sheetNames.length === 0) return out;
+  try {
+    const filter = sheetNames.map((s) => `"${s}"`).join(",");
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/sheets_cache?sheet_name=in.(${filter})`,
+      { headers: dbCacheHeaders() },
+    );
+    if (!res.ok) {
+      console.error("Persistent cache read failed:", res.status, await res.text());
+      return out;
+    }
+    const rows = await res.json() as { sheet_name: string; rows: Record<string, string>[]; fetched_at: string }[];
+    rows.forEach((r) => {
+      out.set(r.sheet_name, {
+        rows: Array.isArray(r.rows) ? r.rows : [],
+        fetchedAt: Date.parse(r.fetched_at || "") || 0,
+      });
+    });
+  } catch (e) {
+    console.warn("Persistent cache read failed:", e);
+  }
+  return out;
+}
+
+async function dbCacheSet(entries: { sheet: string; rows: Record<string, string>[] }[]) {
+  if (!dbCacheEnabled() || entries.length === 0) return;
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/sheets_cache?on_conflict=sheet_name`,
+      {
+        method: "POST",
+        headers: { ...dbCacheHeaders(), Prefer: "resolution=merge-duplicates,return=minimal" },
+        body: JSON.stringify(
+          entries.map((e) => ({ sheet_name: e.sheet, rows: e.rows, fetched_at: new Date().toISOString() })),
+        ),
+      },
+    );
+    if (!res.ok) console.error("Persistent cache write failed:", res.status, await res.text());
+  } catch (e) {
+    console.warn("Persistent cache write failed:", e);
+  }
+}
+
+async function dbCacheInvalidate(sheetName: string) {
+  if (!dbCacheEnabled()) return;
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/sheets_cache?sheet_name=eq.${encodeURIComponent(sheetName)}`,
+      { method: "DELETE", headers: dbCacheHeaders() },
+    );
+    if (!res.ok) console.error("Persistent cache invalidate failed:", res.status, await res.text());
+  } catch (e) {
+    console.warn("Persistent cache invalidate failed:", e);
+  }
+}
+
+// Unified cache lookup: memory first, then the persistent DB cache.
+// Returns null when neither has a copy of the sheet.
+async function getCachedCopy(sheet: string): Promise<{ rows: Record<string, string>[]; fresh: boolean } | null> {
+  const mem = cacheGet(sheet);
+  if (mem) return { rows: mem, fresh: true };
+  const staleMem = cacheGet(sheet, Infinity);
+  if (staleMem) return { rows: staleMem, fresh: false };
+  const db = await dbCacheGet([sheet]);
+  const entry = db.get(sheet);
+  if (!entry) return null;
+  return { rows: entry.rows, fresh: Date.now() - entry.fetchedAt <= CACHE_TTL_MS };
+}
+
+async function storeToCache(sheet: string, rows: Record<string, string>[]) {
+  cacheSetMemory(sheet, rows);
+  await dbCacheSet([{ sheet, rows }]);
 }
 
 // Refresh cached sheets in the background without blocking the response
 // (stale-while-revalidate). Failures are ignored — the next request retries.
 function backgroundRevalidate(accessToken: string, sheetId: string, sheetNames: string[]) {
   batchGetSheetData(accessToken, sheetId, sheetNames)
-    .then((data) => {
-      Object.entries(data).forEach(([name, rows]) => cacheSet(name, rows));
+    .then(async (data) => {
+      const entries = Object.entries(data).map(([name, rows]) => ({ sheet: name, rows }));
+      entries.forEach(({ sheet: name, rows }) => cacheSetMemory(name, rows));
+      await dbCacheSet(entries);
     })
     .catch((e) => console.warn(`Background refresh failed for ${sheetNames.join(",")}:`, e));
 }
@@ -411,29 +503,25 @@ serve(async (req) => {
     let result;
     switch (action) {
       case "read": {
-        const freshRows = cacheGet(sheet);
-        if (freshRows) {
-          result = freshRows;
-          break;
-        }
-        // Serve any cached copy immediately and refresh in the background —
-        // keeps repeated page loads inside Google's read quota instead of
-        // failing with a rate-limit error.
-        const staleRows = cacheGet(sheet, Infinity);
-        if (staleRows) {
-          result = staleRows;
-          backgroundRevalidate(accessToken, googleSheetId, [sheet]);
+        // Serve any cached copy (memory or persistent DB cache) immediately
+        // and refresh in the background — keeps repeated page loads inside
+        // Google's read quota instead of failing with a rate-limit error.
+        const cached = await getCachedCopy(sheet);
+        if (cached) {
+          result = cached.rows;
+          if (!cached.fresh) backgroundRevalidate(accessToken, googleSheetId, [sheet]);
           break;
         }
         try {
           result = await getSheetData(accessToken, googleSheetId, sheet);
-          cacheSet(sheet, result);
+          await storeToCache(sheet, result);
         } catch (e) {
-          // When Google is rate limiting, serve slightly stale cached data
+          // When Google is rate limiting, serve the persistent cache copy
           // rather than failing the page.
-          const staleFallback = cacheGet(sheet, Infinity);
-          if (staleFallback) {
-            result = staleFallback;
+          const db = await dbCacheGet([sheet]);
+          const entry = db.get(sheet);
+          if (entry) {
+            result = entry.rows;
             break;
           }
           throw e;
@@ -450,35 +538,48 @@ serve(async (req) => {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
-        // Serve everything we can from cache first; only hit Google for the
-        // sheets that have no cached copy at all.
+        // Serve everything we can from cache (memory first, then the
+        // persistent DB cache); only hit Google for the sheets that have no
+        // cached copy at all.
         const allResult: Record<string, Record<string, string>[]> = {};
         const missing: string[] = [];
+        const staleNames: string[] = [];
+        const dbEntries = await dbCacheGet(requested);
         requested.forEach((name) => {
-          const fresh = cacheGet(name);
-          if (fresh) allResult[name] = fresh;
-          else missing.push(name);
+          const mem = cacheGet(name);
+          if (mem) {
+            allResult[name] = mem;
+            return;
+          }
+          const entry = dbEntries.get(name);
+          if (entry) {
+            allResult[name] = entry.rows;
+            if (Date.now() - entry.fetchedAt > CACHE_TTL_MS) staleNames.push(name);
+          } else {
+            missing.push(name);
+          }
         });
         let fetchFailed = false;
         if (missing.length > 0) {
           try {
             const data = await batchGetSheetData(accessToken, googleSheetId, missing.slice(0, 10));
-            Object.entries(data).forEach(([name, rows]) => {
-              cacheSet(name, rows);
+            const entries = Object.entries(data).map(([name, rows]) => ({ sheet: name, rows }));
+            entries.forEach(({ sheet: name, rows }) => {
+              cacheSetMemory(name, rows);
               allResult[name] = rows;
             });
+            await dbCacheSet(entries);
           } catch (e) {
             console.error("Batch read failed, serving cached data where available:", e);
             fetchFailed = true;
             missing.forEach((name) => {
-              const stale = cacheGet(name, Infinity);
+              const stale = cacheGet(name, Infinity) ?? dbEntries.get(name)?.rows;
               if (stale) allResult[name] = stale;
             });
           }
-        } else {
+        } else if (staleNames.length > 0) {
           // Fully served from cache; quietly refresh sheets past their TTL.
-          const staleNames = requested.filter(cacheIsStale);
-          if (staleNames.length > 0) backgroundRevalidate(accessToken, googleSheetId, staleNames);
+          backgroundRevalidate(accessToken, googleSheetId, staleNames);
         }
         // Every requested sheet gets an entry, even an empty one, so the
         // caller never gets a partial object.
@@ -488,7 +589,8 @@ serve(async (req) => {
         // Only fail when Google refused the read AND we have no data at all
         // to serve — otherwise stale data beats a hard error.
         const servedAny = requested.some((name) => allResult[name].length > 0);
-        if (fetchFailed && !servedAny) {
+        const havePersistedCopy = requested.some((name) => dbEntries.has(name));
+        if (fetchFailed && !servedAny && !havePersistedCopy) {
           throw new Error("Google Sheets rate limit reached; please retry in a moment");
         }
         result = allResult;
@@ -500,6 +602,7 @@ serve(async (req) => {
         const values = headers.map((h) => sanitizeCellValue(data![h] ?? ""));
         result = await appendRow(accessToken, googleSheetId, sheet, values);
         cacheInvalidate(sheet);
+        await dbCacheInvalidate(sheet);
         break;
       }
       case "update": {
@@ -516,6 +619,7 @@ serve(async (req) => {
         const values = headers.map((h) => sanitizeCellValue(data![h] ?? existing[h] ?? ""));
         result = await updateRow(accessToken, googleSheetId, sheet, rowIndex, values);
         cacheInvalidate(sheet);
+        await dbCacheInvalidate(sheet);
         break;
       }
       case "delete": {
@@ -530,6 +634,7 @@ serve(async (req) => {
         }
         result = await deleteRow(accessToken, googleSheetId, sheet, idx);
         cacheInvalidate(sheet);
+        await dbCacheInvalidate(sheet);
         break;
       }
     }

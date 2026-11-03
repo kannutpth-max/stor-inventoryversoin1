@@ -223,8 +223,19 @@ export default function StockOutManagement() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteRequisition} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              ลบใบเบิก
+            <AlertDialogAction
+              onClick={handleDeleteRequisition}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  กำลังลบ...
+                </>
+              ) : (
+                "ลบใบเบิก"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

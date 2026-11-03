@@ -77,8 +77,9 @@ export default function StockOutManagement() {
   };
 
   const handleDeleteRequisition = async () => {
-    if (!deleteReqNo) return;
+    if (!deleteReqNo || isDeleting) return;
     const records = stockOuts.filter(r => r.requisition_no === deleteReqNo);
+    setIsDeleting(true);
     try {
       for (const record of records) {
         if (record.status === "dispensed") {
@@ -98,6 +99,8 @@ export default function StockOutManagement() {
       setDeleteReqNo(null);
     } catch (e: any) {
       toast({ variant: "destructive", title: "เกิดข้อผิดพลาด", description: e.message });
+    } finally {
+      setIsDeleting(false);
     }
   };
 

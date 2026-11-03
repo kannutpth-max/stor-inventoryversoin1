@@ -522,10 +522,11 @@ serve(async (req) => {
         const allData = await getSheetData(accessToken, googleSheetId, sheet);
         const idx = allData.findIndex((r: any) => r.id === id);
         if (idx === -1) {
-          return new Response(JSON.stringify({ success: false, error: "Not found" }), {
-            status: 404,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          // The row is already gone (e.g. a double-click or a retried request
+          // after the first delete succeeded) — treat as a successful no-op
+          // instead of a 404 so the caller's batch never fails halfway.
+          result = { deleted: false, alreadyDeleted: true };
+          break;
         }
         result = await deleteRow(accessToken, googleSheetId, sheet, idx);
         cacheInvalidate(sheet);

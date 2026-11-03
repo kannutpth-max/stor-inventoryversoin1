@@ -34,6 +34,7 @@ export default function StockOutManagement() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [deleteReqNo, setDeleteReqNo] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
 
   const getDepartmentName = (id: string) => departments.find(d => d.id === id)?.name || id;

@@ -34,7 +34,7 @@ function cacheGet(sheet: string, maxAgeMs: number = CACHE_TTL_MS): Record<string
   return null;
 }
 
-function cacheSet(sheet: string, rows: Record<string, string>[]) {
+function cacheSetMemory(sheet: string, rows: Record<string, string>[]) {
   (SHEET_CACHE.__gsSheetCache ??= new Map()).set(sheet, { rows, ts: Date.now() });
 }
 
@@ -45,19 +45,111 @@ function cacheInvalidate(sheet?: string) {
   else cache.clear();
 }
 
-// True when the sheet has a cached copy but older than the fresh TTL.
-function cacheIsStale(sheet: string): boolean {
-  const cache = SHEET_CACHE.__gsSheetCache;
-  const entry = cache?.get(sheet);
-  return !!entry && Date.now() - entry.ts > CACHE_TTL_MS;
+// ============ Persistent cache (survives instance restarts) ============
+// The in-memory cache is wiped every time the function spins up a new
+// instance, which happens frequently — without a persistent copy every page
+// load goes straight to Google and exhausts its 60 reads/minute quota.
+// Cached sheet data is therefore mirrored in the sheets_cache table and read
+// back with the service role key whenever memory is empty.
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+
+function dbCacheEnabled(): boolean {
+  return !!(SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY);
+}
+
+function dbCacheHeaders(): Record<string, string> {
+  return {
+    apikey: SUPABASE_SERVICE_ROLE_KEY,
+    Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+    "Content-Type": "application/json",
+  };
+}
+
+async function dbCacheGet(sheetNames: string[]): Promise<Map<string, { rows: Record<string, string>[]; fetchedAt: number }>> {
+  const out = new Map<string, { rows: Record<string, string>[]; fetchedAt: number }>();
+  if (!dbCacheEnabled() || sheetNames.length === 0) return out;
+  try {
+    const filter = sheetNames.map((s) => `"${s}"`).join(",");
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/sheets_cache?sheet_name=in.(${filter})`,
+      { headers: dbCacheHeaders() },
+    );
+    if (!res.ok) {
+      console.error("Persistent cache read failed:", res.status, await res.text());
+      return out;
+    }
+    const rows = await res.json() as { sheet_name: string; rows: Record<string, string>[]; fetched_at: string }[];
+    rows.forEach((r) => {
+      out.set(r.sheet_name, {
+        rows: Array.isArray(r.rows) ? r.rows : [],
+        fetchedAt: Date.parse(r.fetched_at || "") || 0,
+      });
+    });
+  } catch (e) {
+    console.warn("Persistent cache read failed:", e);
+  }
+  return out;
+}
+
+async function dbCacheSet(entries: { sheet: string; rows: Record<string, string>[] }[]) {
+  if (!dbCacheEnabled() || entries.length === 0) return;
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/sheets_cache?on_conflict=sheet_name`,
+      {
+        method: "POST",
+        headers: { ...dbCacheHeaders(), Prefer: "resolution=merge-duplicates,return=minimal" },
+        body: JSON.stringify(
+          entries.map((e) => ({ sheet_name: e.sheet, rows: e.rows, fetched_at: new Date().toISOString() })),
+        ),
+      },
+    );
+    if (!res.ok) console.error("Persistent cache write failed:", res.status, await res.text());
+  } catch (e) {
+    console.warn("Persistent cache write failed:", e);
+  }
+}
+
+async function dbCacheInvalidate(sheetName: string) {
+  if (!dbCacheEnabled()) return;
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/sheets_cache?sheet_name=eq.${encodeURIComponent(sheetName)}`,
+      { method: "DELETE", headers: dbCacheHeaders() },
+    );
+    if (!res.ok) console.error("Persistent cache invalidate failed:", res.status, await res.text());
+  } catch (e) {
+    console.warn("Persistent cache invalidate failed:", e);
+  }
+}
+
+// Unified cache lookup: memory first, then the persistent DB cache.
+// Returns null when neither has a copy of the sheet.
+async function getCachedCopy(sheet: string): Promise<{ rows: Record<string, string>[]; fresh: boolean } | null> {
+  const mem = cacheGet(sheet);
+  if (mem) return { rows: mem, fresh: true };
+  const staleMem = cacheGet(sheet, Infinity);
+  if (staleMem) return { rows: staleMem, fresh: false };
+  const db = await dbCacheGet([sheet]);
+  const entry = db.get(sheet);
+  if (!entry) return null;
+  return { rows: entry.rows, fresh: Date.now() - entry.fetchedAt <= CACHE_TTL_MS };
+}
+
+async function storeToCache(sheet: string, rows: Record<string, string>[]) {
+  cacheSetMemory(sheet, rows);
+  await dbCacheSet([{ sheet, rows }]);
 }
 
 // Refresh cached sheets in the background without blocking the response
 // (stale-while-revalidate). Failures are ignored — the next request retries.
 function backgroundRevalidate(accessToken: string, sheetId: string, sheetNames: string[]) {
   batchGetSheetData(accessToken, sheetId, sheetNames)
-    .then((data) => {
-      Object.entries(data).forEach(([name, rows]) => cacheSet(name, rows));
+    .then(async (data) => {
+      const entries = Object.entries(data).map(([name, rows]) => ({ sheet: name, rows }));
+      entries.forEach(({ sheet: name, rows }) => cacheSetMemory(name, rows));
+      await dbCacheSet(entries);
     })
     .catch((e) => console.warn(`Background refresh failed for ${sheetNames.join(",")}:`, e));
 }

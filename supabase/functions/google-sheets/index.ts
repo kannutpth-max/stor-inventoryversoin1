@@ -503,29 +503,25 @@ serve(async (req) => {
     let result;
     switch (action) {
       case "read": {
-        const freshRows = cacheGet(sheet);
-        if (freshRows) {
-          result = freshRows;
-          break;
-        }
-        // Serve any cached copy immediately and refresh in the background —
-        // keeps repeated page loads inside Google's read quota instead of
-        // failing with a rate-limit error.
-        const staleRows = cacheGet(sheet, Infinity);
-        if (staleRows) {
-          result = staleRows;
-          backgroundRevalidate(accessToken, googleSheetId, [sheet]);
+        // Serve any cached copy (memory or persistent DB cache) immediately
+        // and refresh in the background — keeps repeated page loads inside
+        // Google's read quota instead of failing with a rate-limit error.
+        const cached = await getCachedCopy(sheet);
+        if (cached) {
+          result = cached.rows;
+          if (!cached.fresh) backgroundRevalidate(accessToken, googleSheetId, [sheet]);
           break;
         }
         try {
           result = await getSheetData(accessToken, googleSheetId, sheet);
-          cacheSet(sheet, result);
+          await storeToCache(sheet, result);
         } catch (e) {
-          // When Google is rate limiting, serve slightly stale cached data
+          // When Google is rate limiting, serve the persistent cache copy
           // rather than failing the page.
-          const staleFallback = cacheGet(sheet, Infinity);
-          if (staleFallback) {
-            result = staleFallback;
+          const db = await dbCacheGet([sheet]);
+          const entry = db.get(sheet);
+          if (entry) {
+            result = entry.rows;
             break;
           }
           throw e;

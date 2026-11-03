@@ -394,7 +394,7 @@ function StockCardReport({ products, stockIn, stockOut, allStockIn, allStockOut,
 
         // Opening balance = balance carried over from before the filtered period,
         // computed from the full transaction history (not the `stock` column).
-        const sumBefore = (arr: typeof allStockIn) => arr.reduce((s, r) => {
+        const sumBefore = (arr: { product_id: string; quantity: string; date: string }[]) => arr.reduce((s, r) => {
           if (r.product_id !== product.id) return s;
           const d = parseSheetDate(r.date);
           if (Number.isNaN(d.getTime())) return s;

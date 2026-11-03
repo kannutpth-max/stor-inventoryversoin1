@@ -538,35 +538,48 @@ serve(async (req) => {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
-        // Serve everything we can from cache first; only hit Google for the
-        // sheets that have no cached copy at all.
+        // Serve everything we can from cache (memory first, then the
+        // persistent DB cache); only hit Google for the sheets that have no
+        // cached copy at all.
         const allResult: Record<string, Record<string, string>[]> = {};
         const missing: string[] = [];
+        const staleNames: string[] = [];
+        const dbEntries = await dbCacheGet(requested);
         requested.forEach((name) => {
-          const fresh = cacheGet(name);
-          if (fresh) allResult[name] = fresh;
-          else missing.push(name);
+          const mem = cacheGet(name);
+          if (mem) {
+            allResult[name] = mem;
+            return;
+          }
+          const entry = dbEntries.get(name);
+          if (entry) {
+            allResult[name] = entry.rows;
+            if (Date.now() - entry.fetchedAt > CACHE_TTL_MS) staleNames.push(name);
+          } else {
+            missing.push(name);
+          }
         });
         let fetchFailed = false;
         if (missing.length > 0) {
           try {
             const data = await batchGetSheetData(accessToken, googleSheetId, missing.slice(0, 10));
-            Object.entries(data).forEach(([name, rows]) => {
-              cacheSet(name, rows);
+            const entries = Object.entries(data).map(([name, rows]) => ({ sheet: name, rows }));
+            entries.forEach(({ sheet: name, rows }) => {
+              cacheSetMemory(name, rows);
               allResult[name] = rows;
             });
+            await dbCacheSet(entries);
           } catch (e) {
             console.error("Batch read failed, serving cached data where available:", e);
             fetchFailed = true;
             missing.forEach((name) => {
-              const stale = cacheGet(name, Infinity);
+              const stale = cacheGet(name, Infinity) ?? dbEntries.get(name)?.rows;
               if (stale) allResult[name] = stale;
             });
           }
-        } else {
+        } else if (staleNames.length > 0) {
           // Fully served from cache; quietly refresh sheets past their TTL.
-          const staleNames = requested.filter(cacheIsStale);
-          if (staleNames.length > 0) backgroundRevalidate(accessToken, googleSheetId, staleNames);
+          backgroundRevalidate(accessToken, googleSheetId, staleNames);
         }
         // Every requested sheet gets an entry, even an empty one, so the
         // caller never gets a partial object.
@@ -576,7 +589,8 @@ serve(async (req) => {
         // Only fail when Google refused the read AND we have no data at all
         // to serve — otherwise stale data beats a hard error.
         const servedAny = requested.some((name) => allResult[name].length > 0);
-        if (fetchFailed && !servedAny) {
+        const havePersistedCopy = requested.some((name) => dbEntries.has(name));
+        if (fetchFailed && !servedAny && !havePersistedCopy) {
           throw new Error("Google Sheets rate limit reached; please retry in a moment");
         }
         result = allResult;

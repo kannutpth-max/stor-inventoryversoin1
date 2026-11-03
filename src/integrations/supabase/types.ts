@@ -14,7 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      sheets_cache: {
+        Row: {
+          fetched_at: string
+          rows: Json
+          sheet_name: string
+        }
+        Insert: {
+          fetched_at?: string
+          rows?: Json
+          sheet_name: string
+        }
+        Update: {
+          fetched_at?: string
+          rows?: Json
+          sheet_name?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

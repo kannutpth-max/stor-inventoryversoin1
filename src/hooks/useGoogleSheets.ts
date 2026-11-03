@@ -11,13 +11,32 @@ const ALL_SHEETS_KEY = ["sheets", "__all__"] as const;
 
 type AllSheetsData = Partial<Record<SheetName, Record<string, string>[]>>;
 
+// Last-good copy in localStorage: if the edge function ever fails (e.g.
+// Google's quota window), the UI keeps rendering instead of erroring blank.
+const LOCAL_CACHE_KEY = "sheets-last-good";
+
 async function fetchAllSheets(): Promise<AllSheetsData> {
-  const { data, error } = await supabase.functions.invoke("google-sheets", {
-    body: { action: "readAll", sheets: ALL_SHEETS },
-  });
-  if (error) throw new Error(error.message);
-  if (!data.success) throw new Error(data.error || "Unknown error");
-  return data.data;
+  try {
+    const { data, error } = await supabase.functions.invoke("google-sheets", {
+      body: { action: "readAll", sheets: ALL_SHEETS },
+    });
+    if (error) throw new Error(error.message);
+    if (!data.success) throw new Error(data.error || "Unknown error");
+    try {
+      localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(data.data));
+    } catch {
+      /* storage full or unavailable — non-fatal */
+    }
+    return data.data;
+  } catch (err) {
+    try {
+      const cached = localStorage.getItem(LOCAL_CACHE_KEY);
+      if (cached) return JSON.parse(cached) as AllSheetsData;
+    } catch {
+      /* fall through to the original error */
+    }
+    throw err;
+  }
 }
 
 export function useSheetData<T = Record<string, string>>(sheet: SheetName) {

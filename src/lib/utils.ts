@@ -52,3 +52,21 @@ export function formatMoney(n: number): string {
   return (Number.isFinite(n) ? n : 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
+/** Parse whole-number quantities written as strings with optional grouping separators. */
+export function parseQuantity(value: string | number | null | undefined): number {
+  if (typeof value === "number") return Number.isFinite(value) ? Math.trunc(value) : 0;
+  const normalized = String(value ?? "").replace(/[\s,，٬]/g, "");
+  const parsed = Number.parseInt(normalized, 10);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+export function calculateStockBalance(
+  productId: string,
+  stockIns: { product_id: string; quantity: string }[],
+  stockOuts: { product_id: string; quantity: string; status?: string }[],
+): number {
+  const totalIn = stockIns.reduce((sum, row) => sum + (row.product_id === productId ? parseQuantity(row.quantity) : 0), 0);
+  const totalOut = stockOuts.reduce((sum, row) => sum + (row.product_id === productId && row.status === "dispensed" ? parseQuantity(row.quantity) : 0), 0);
+  return totalIn - totalOut;
+}
+

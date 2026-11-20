@@ -16,7 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
-import { cn, formatThaiBuddhistDate, parseSheetDate } from "@/lib/utils";
+import { calculateStockBalance, cn, formatThaiBuddhistDate, parseQuantity, parseSheetDate } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useSheetData, useSheetCreate, useSheetUpdate } from "@/hooks/useGoogleSheets";
 
@@ -28,6 +28,7 @@ interface StockOutRecord {
   product_id: string; quantity: string; status?: string; created_at: string;
   requester?: string; position?: string;
 }
+interface StockInRecord { product_id: string; quantity: string; }
 
 interface StockOutItem {
   id: string; recordId?: string; productId: string; productName: string; unit: string;
@@ -45,6 +46,7 @@ export default function StockOut() {
   const { data: products = [] } = useSheetData<Product>("products");
   const { data: units = [] } = useSheetData<Unit>("units");
   const { data: stockOuts = [] } = useSheetData<StockOutRecord>("stock_out");
+  const { data: stockIns = [] } = useSheetData<StockInRecord>("stock_in");
   const createMutation = useSheetCreate("stock_out");
   const updateStockOut = useSheetUpdate("stock_out");
   const updateProduct = useSheetUpdate("products");
@@ -63,6 +65,7 @@ export default function StockOut() {
 
   const getUnitName = (unitId: string) => units.find(u => u.id === unitId)?.name || unitId;
   const getDepartmentName = (id: string) => departments.find(d => d.id === id)?.name || "";
+  const getCurrentBalance = (productId: string) => calculateStockBalance(productId, stockIns, stockOuts);
 
   // Load existing requisition data in edit mode
   useEffect(() => {
@@ -77,8 +80,9 @@ export default function StockOut() {
         setPosition(first.position || "");
         setItems(records.map(r => {
           const product = products.find(p => p.id === r.product_id);
-          const qty = parseInt(r.quantity) || 0;
+          const qty = parseQuantity(r.quantity);
           const isDispensed = r.status === "dispensed";
+          const availableStock = getCurrentBalance(r.product_id);
           return {
             id: `item-${r.id}`,
             recordId: r.id,
@@ -88,7 +92,7 @@ export default function StockOut() {
             quantity: qty,
             dispenseQty: qty,
             originalDispenseQty: isDispensed ? qty : 0,
-            stock: parseInt(product?.stock || "0"),
+            stock: availableStock + (isDispensed ? qty : 0),
             status: r.status,
           };
         }));
@@ -120,8 +124,8 @@ export default function StockOut() {
     }
     const product = products.find((p) => p.id === selectedProduct);
     if (!product) return;
-    const stock = parseInt(product.stock) || 0;
-    const qty = parseInt(quantity);
+    const stock = getCurrentBalance(product.id);
+    const qty = parseQuantity(quantity);
     if (qty > stock) {
       toast({ variant: "destructive", title: "จำนวนเกินกว่าวัสดุคงเหลือ" });
       return;
@@ -178,7 +182,7 @@ export default function StockOut() {
     }
     for (const [pid, net] of netByProduct.entries()) {
       const product = products.find(p => p.id === pid);
-      const currentStock = parseInt(product?.stock || "0") || 0;
+      const currentStock = getCurrentBalance(pid);
       if (net > 0 && net > currentStock) {
         toast({ variant: "destructive", title: `${product?.name || pid} คงเหลือไม่เพียงพอ (คงเหลือ ${currentStock})` });
         return;
@@ -190,10 +194,10 @@ export default function StockOut() {
       for (const [pid, net] of netByProduct.entries()) {
         const product = products.find(p => p.id === pid);
         if (!product) continue;
-        const currentStock = parseInt(product.stock) || 0;
+        const currentStock = getCurrentBalance(pid);
         await updateProduct.mutateAsync({
           id: product.id,
-          data: { ...product, stock: (currentStock - net).toString() },
+          data: { ...product, stock: Math.max(0, currentStock - net).toString() },
         });
       }
 
@@ -273,7 +277,7 @@ export default function StockOut() {
     }
     for (const [pid, net] of netByProduct.entries()) {
       const product = products.find(p => p.id === pid);
-      const currentStock = parseInt(product?.stock || "0") || 0;
+      const currentStock = getCurrentBalance(pid);
       if (net > 0 && net > currentStock) {
         toast({ variant: "destructive", title: `${product?.name || pid} คงเหลือไม่เพียงพอ (คงเหลือ ${currentStock})` });
         return;
@@ -286,7 +290,7 @@ export default function StockOut() {
         if (net === 0) continue;
         const product = products.find(p => p.id === pid);
         if (!product) continue;
-        const currentStock = parseInt(product.stock) || 0;
+        const currentStock = getCurrentBalance(pid);
         await updateProduct.mutateAsync({
           id: product.id,
           data: { ...product, stock: (currentStock - net).toString() },
@@ -524,7 +528,7 @@ export default function StockOut() {
                         {selectedProduct
                           ? (() => {
                               const p = products.find((pr) => pr.id === selectedProduct);
-                              return p ? `${p.id} - ${p.name} (คงเหลือ: ${p.stock || 0})` : "เลือกวัสดุ";
+                              return p ? `${p.id} - ${p.name} (คงเหลือ: ${getCurrentBalance(p.id)})` : "เลือกวัสดุ";
                             })()
                           : "เลือกวัสดุ"}
                       </span>
@@ -544,7 +548,7 @@ export default function StockOut() {
                               onSelect={() => { setSelectedProduct(p.id); setProductOpen(false); }}
                             >
                               <Check className={cn("mr-2 h-4 w-4", selectedProduct === p.id ? "opacity-100" : "opacity-0")} />
-                              <span className="text-sm">{p.id} - {p.name} (คงเหลือ: {p.stock || 0})</span>
+                              <span className="text-sm">{p.id} - {p.name} (คงเหลือ: {getCurrentBalance(p.id)})</span>
                             </CommandItem>
                           ))}
                         </CommandGroup>
@@ -596,7 +600,7 @@ export default function StockOut() {
                       <Input
                         type="number"
                         value={item.quantity || ""}
-                        onChange={(e) => updateRequestQty(item.id, parseInt(e.target.value) || 0)}
+                        onChange={(e) => updateRequestQty(item.id, parseQuantity(e.target.value))}
                         className="h-6 w-16 text-xs text-center p-0 mx-auto print:border-0 print:border-b print:rounded-none"
                       />
                     </TableCell>
@@ -608,7 +612,7 @@ export default function StockOut() {
                       <Input
                         type="number"
                         value={item.dispenseQty || ""}
-                        onChange={(e) => updateDispenseQty(item.id, parseInt(e.target.value) || 0)}
+                        onChange={(e) => updateDispenseQty(item.id, parseQuantity(e.target.value))}
                         className="h-6 w-16 text-xs text-center p-0 mx-auto print:border-0 print:border-b print:rounded-none"
                       />
                     </TableCell>

@@ -206,7 +206,7 @@ export default function StockOut() {
         const record = stockOuts.find(r => r.id === item.recordId);
         if (!record) continue;
         const qtyDelta = (item.dispenseQty || 0) - (item.originalDispenseQty || 0);
-        const recordQty = parseInt(record.quantity) || 0;
+        const recordQty = parseQuantity(record.quantity);
         const reqQtyChanged = (item.quantity || 0) !== recordQty;
         const isSame =
           qtyDelta === 0 &&
